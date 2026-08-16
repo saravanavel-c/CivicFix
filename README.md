@@ -1,16 +1,48 @@
-# React + Vite
+# CivicFix
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**CivicFix** is an AI-assisted civic issue reporting and resolution platform that connects citizens with municipal authorities. Citizens can report issues such as potholes, overflowing garbage, broken streetlights, water leakage, and drainage problems using images, location, and descriptions.
 
-Currently, two official plugins are available:
+The platform aims to simplify complaint reporting, enable efficient issue management, and provide transparent tracking of complaints from submission to resolution.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Current Module
 
-## React Compiler
+### Citizen Dashboard
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* Report civic issues
+* Upload issue images
+* Capture issue location
+* Track submitted complaints
+* View complaint status and updates
+* Explore nearby reported issues
+* Manage notifications and profile
 
-## Expanding the ESLint configuration
+> **Note:** This project is currently under development. Backend, AI services, and real-time integrations will be added in later stages.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Tech Stack
+
+* React
+* Vite
+* Tailwind CSS
+* React Router
+* Lucide React
+
+## Getting Started
+
+Clone the repository and install the dependencies:
+
+```bash
+cd frontend
+npm install
+```
+
+Run the development server:
+
+```bash
+npm run dev
+```
+
+The application will be available at the localhost:5173.
+
+## Project Status
+
+**In Development**
