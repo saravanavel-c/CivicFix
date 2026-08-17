@@ -51,6 +51,9 @@ The application will be available at the localhost:5173.
 
 - The app now uses a free, high-quality basemap (CartoDB Voyager via Leaflet) and a draggable map picker so users can precisely set the report location.
 - Live GPS tracking is supported (watchPosition). Users can start/stop live tracking from the Report Issue flow and see a small "Live GPS" badge while tracking is active.
+- **Automatic Location Fetching:** The app automatically requests the user's location as soon as they enter Step 2 (Set Location) of the report flow.
+- **Robust Fallback Mechanism:** If high-accuracy GPS fails or times out (common on desktop browsers/devices without GPS hardware), the app automatically falls back to low-accuracy (Wi-Fi/IP-based) location.
+- **Toast Notifications:** Displays clear error messages to the user if geolocation is blocked or fails entirely.
 - The marker on the map is draggable for fine adjustments; a mini-map preview and custom zoom controls were added for a polished UI.
 - The app persists the last-known location to localStorage so it can be reused across sessions.
 
