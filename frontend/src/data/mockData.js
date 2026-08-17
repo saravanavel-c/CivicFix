@@ -4,7 +4,7 @@ export const mockUser = {
   name: "Saravana Vel",
   email: "saravana.vel@civicfix.gov.in",
   phone: "+91 98765 43210",
-  avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+  avatar: "https://randomuser.me/api/portraits/men/32.jpg",
   preferredLanguage: "English",
   savedLocation: "Gandhipuram, Coimbatore, Tamil Nadu",
   joinedDate: "October 2025"
