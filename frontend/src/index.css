@@ -69,3 +69,106 @@
 .glass {
   @apply bg-white/80 backdrop-blur-md border border-white/40;
 }
+
+/* Map UI enhancements */
+.cf-leaflet {
+  border-radius: 1rem;
+}
+
+.cf-pin-wrap {
+  display: block;
+}
+
+.cf-pin {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  transform: rotate(-45deg);
+  left: 0;
+}
+
+.cf-pin-inner {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  background: var(--color-primary-600);
+  border-radius: 50% 50% 50% 50%;
+  box-shadow: 0 6px 18px rgba(2,132,199,0.18);
+  transform: rotate(45deg);
+}
+
+.cf-pin::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 4px;
+  background: rgba(0,0,0,0.12);
+  border-radius: 50%;
+  filter: blur(2px);
+}
+
+.cf-pin-inner::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+}
+
+.map-locate-control .map-locate-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: white;
+  color: var(--color-primary-600);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(2,132,199,0.12);
+  margin: 6px;
+  text-decoration: none;
+}
+
+.map-locate-control .map-locate-btn:hover {
+  background: var(--color-primary-50);
+}
+
+.leaflet-control .leaflet-bar a {
+  border: none;
+}
+
+/* Smooth marker movement */
+.leaflet-marker-icon, .leaflet-marker-shadow {
+  transition: transform 260ms ease-out, opacity 200ms ease;
+}
+
+.cf-zoom-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(2,132,199,0.08);
+  color: var(--color-primary-600);
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.cf-zoom-btn:hover {
+  background: var(--color-primary-50);
+}
+
+.cf-mini-map .leaflet-container {
+  border-radius: 8px;
+}

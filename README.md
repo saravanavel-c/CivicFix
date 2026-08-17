@@ -46,3 +46,46 @@ The application will be available at the localhost:5173.
 ## Project Status
 
 **In Development**
+
+## Map & Geolocation (New)
+
+- The app now uses a free, high-quality basemap (CartoDB Voyager via Leaflet) and a draggable map picker so users can precisely set the report location.
+- Live GPS tracking is supported (watchPosition). Users can start/stop live tracking from the Report Issue flow and see a small "Live GPS" badge while tracking is active.
+- The marker on the map is draggable for fine adjustments; a mini-map preview and custom zoom controls were added for a polished UI.
+- The app persists the last-known location to localStorage so it can be reused across sessions.
+
+Files changed (core):
+- [frontend/src/hooks/useGeolocation.js](frontend/src/hooks/useGeolocation.js)
+- [frontend/src/components/common/MapPicker.jsx](frontend/src/components/common/MapPicker.jsx)
+- [frontend/src/pages/ReportIssue.jsx](frontend/src/pages/ReportIssue.jsx)
+- [frontend/src/pages/NearbyIssues.jsx](frontend/src/pages/NearbyIssues.jsx)
+- [frontend/src/index.css](frontend/src/index.css)
+
+## Additional Dependencies
+
+Install the Leaflet map libraries required by the new UI:
+
+```bash
+cd frontend
+npm install leaflet react-leaflet
+```
+
+Note: `leaflet` includes image assets that are imported by the components; Vite and modern bundlers should handle these imports automatically.
+
+## Reverse Geocoding
+
+Reverse geocoding (lat/lng -> readable address) uses Nominatim (OpenStreetMap) by default. Nominatim is free but rate-limited. If you expect high-volume or need guaranteed SLA, consider switching to a paid provider (Mapbox, Here, Google Maps) and updating the reverse-geocode call in [frontend/src/pages/ReportIssue.jsx](frontend/src/pages/ReportIssue.jsx).
+
+## How to Test
+
+1. Install dependencies and start the dev server (see commands above).
+2. Open the app in a browser and grant Geolocation permission when prompted.
+3. Go to "Report an Issue" and click "Use My Current Location" to start live tracking.
+4. Drag the map marker to fine-tune the position; confirm the address updates in the form.
+5. Submit the report to ensure coordinates are included in the payload.
+
+## Notes & Next Steps
+
+- If you want a different basemap style, I can switch to Positron (Carto) or Stamen toner/toner-lite.
+- I can also add an optional API-key-based reverse geocoding provider and an admin setting to configure which provider to use.
+
