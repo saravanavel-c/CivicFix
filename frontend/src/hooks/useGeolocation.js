@@ -1,11 +1,18 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 
 // Lightweight hook to access browser Geolocation and optionally watch position updates.
-export function useGeolocation(options = { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }) {
+export function useGeolocation(userOptions = {}) {
   const [position, setPosition] = useState(null);
   const [error, setError] = useState(null);
   const watchIdRef = useRef(null);
   const [watching, setWatching] = useState(false);
+
+  const options = useMemo(() => ({
+    enableHighAccuracy: true,
+    maximumAge: 0,
+    timeout: 15000,
+    ...userOptions
+  }), [JSON.stringify(userOptions)]);
 
   // initialize from persisted last-known location if available
   useEffect(() => {
@@ -44,8 +51,24 @@ export function useGeolocation(options = { enableHighAccuracy: true, maximumAge:
       setError(new Error('Geolocation not supported'));
       return;
     }
-    navigator.geolocation.getCurrentPosition(handleSuccess, handleError, options);
-  }, [handleSuccess, handleError, options]);
+
+    const errorCallback = (err) => {
+      if (options.enableHighAccuracy) {
+        console.warn("High accuracy geolocation failed, retrying with low accuracy...", err);
+        navigator.geolocation.getCurrentPosition(
+          handleSuccess,
+          (err2) => {
+            setError(err2);
+          },
+          { ...options, enableHighAccuracy: false }
+        );
+      } else {
+        setError(err);
+      }
+    };
+
+    navigator.geolocation.getCurrentPosition(handleSuccess, errorCallback, options);
+  }, [handleSuccess, options]);
 
   const startWatching = useCallback(() => {
     if (!('geolocation' in navigator)) {
@@ -53,11 +76,29 @@ export function useGeolocation(options = { enableHighAccuracy: true, maximumAge:
       return;
     }
     if (watchIdRef.current != null) return; // already watching
-    const id = navigator.geolocation.watchPosition(handleSuccess, handleError, options);
+
+    const errorCallback = (err) => {
+      if (options.enableHighAccuracy) {
+        console.warn("High accuracy watchPosition failed, retrying with low accuracy...", err);
+        if (watchIdRef.current != null) {
+          navigator.geolocation.clearWatch(watchIdRef.current);
+        }
+        const id = navigator.geolocation.watchPosition(
+          handleSuccess,
+          (err2) => setError(err2),
+          { ...options, enableHighAccuracy: false }
+        );
+        watchIdRef.current = id;
+      } else {
+        setError(err);
+      }
+    };
+
+    const id = navigator.geolocation.watchPosition(handleSuccess, errorCallback, options);
     watchIdRef.current = id;
     setWatching(true);
     return id;
-  }, [handleSuccess, handleError, options]);
+  }, [handleSuccess, options]);
 
   const stopWatching = useCallback(() => {
     if (watchIdRef.current != null && 'geolocation' in navigator) {

@@ -21,9 +21,18 @@ function Recenter({ position }) {
   return null;
 }
 
+function MapController({ setMap }) {
+  const map = useMap();
+  useEffect(() => {
+    setMap(map);
+  }, [map, setMap]);
+  return null;
+}
+
 export const MapPicker = ({ lat, lng, zoom = 16, onChange }) => {
   const defaultPos = lat && lng ? [Number(lat), Number(lng)] : [11.0168, 76.9558];
   const [markerPos, setMarkerPos] = useState(defaultPos);
+  const [map, setMap] = useState(null);
 
   useEffect(() => {
     if (lat && lng) setMarkerPos([Number(lat), Number(lng)]);
@@ -76,8 +85,7 @@ export const MapPicker = ({ lat, lng, zoom = 16, onChange }) => {
 
   return (
     <div className="w-full h-44 rounded-2xl overflow-hidden relative">
-      <MapContainer whenCreated={setMap} center={markerPos} zoom={zoom} style={{ height: '100%', width: '100%' }} className="cf-leaflet">
-        <Recenter position={markerPos} />
+      <MapContainer whenCreated={setMap} center={markerPos} zoom={zoom} style={{ height: '100%', width: '100%' }} className="cf-leaflet">        <MapController setMap={setMap} />        <Recenter position={markerPos} />
         <TileLayer
           attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> &amp; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"

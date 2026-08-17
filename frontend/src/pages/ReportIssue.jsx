@@ -21,6 +21,7 @@ import { FormInput } from '../components/common/FormInput';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import useGeolocation from '../hooks/useGeolocation';
 import MapPicker from '../components/common/MapPicker';
+import { Toast } from '../components/common/Toast';
 
 // Sample high-quality mock images of civic issues for easy simulation click
 const PRESET_MOCK_IMAGES = [
@@ -53,6 +54,8 @@ export const ReportIssue = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdId, setCreatedId] = useState(null);
   const [formErrors, setFormErrors] = useState({});
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
 
   const navigate = useNavigate();
 
@@ -103,6 +106,13 @@ export const ReportIssue = () => {
     }
   };
 
+  // Automatically trigger location fetch when entering Step 2
+  useEffect(() => {
+    if (step === 2 && !coordinates.lat && !coordinates.lng) {
+      handleGetLocation();
+    }
+  }, [step]);
+
   // Apply position updates to local form state and reverse-geocode to a readable address
   useEffect(() => {
     let mounted = true;
@@ -117,6 +127,8 @@ export const ReportIssue = () => {
     }
     if (geoError) {
       console.error('Geolocation error:', geoError);
+      setToastType('error');
+      setToastMessage(`Failed to get live location: ${geoError.message || 'Permission denied or timeout'}. Please check your browser/system location settings.`);
     }
     return () => { mounted = false; };
   }, [position, geoError]);
@@ -659,6 +671,14 @@ export const ReportIssue = () => {
             File Another Issue
           </button>
         </div>
+      )}
+
+      {toastMessage && (
+        <Toast 
+          message={toastMessage} 
+          type={toastType} 
+          onClose={() => setToastMessage('')} 
+        />
       )}
     </div>
   );
