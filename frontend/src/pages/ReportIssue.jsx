@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Camera, 
@@ -18,6 +18,8 @@ import { complaintService } from '../services/complaintService';
 import { Button } from '../components/common/Button';
 import { FormInput } from '../components/common/FormInput';
 import { PriorityBadge } from '../components/common/PriorityBadge';
+import useGeolocation from '../hooks/useGeolocation';
+import MapPicker from '../components/common/MapPicker';
 
 // Sample high-quality mock images of civic issues for easy simulation click
 const PRESET_MOCK_IMAGES = [
@@ -70,14 +72,53 @@ export const ReportIssue = () => {
   };
 
   // Geolocation mock simulation
-  const handleGetLocation = () => {
-    setIsCapturingLocation(true);
-    setTimeout(() => {
-      setCoordinates({ lat: '11.0168', lng: '76.9558' });
-      setLocationName('Gandhipuram Cross St, Coimbatore, Tamil Nadu');
-      setIsCapturingLocation(false);
-    }, 1200);
+  const { position, error: geoError, getCurrent, startWatching, stopWatching, watching } = useGeolocation();
+
+  const reverseGeocode = async (lat, lng) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.display_name || null;
+    } catch (err) {
+      return null;
+    }
   };
+
+  const handleGetLocation = async () => {
+    if (watching) {
+      stopWatching();
+      setIsCapturingLocation(false);
+      return;
+    }
+
+    setIsCapturingLocation(true);
+    try {
+      // Request a single snapshot and then start watching for live updates
+      getCurrent();
+      startWatching();
+    } finally {
+      setIsCapturingLocation(false);
+    }
+  };
+
+  // Apply position updates to local form state and reverse-geocode to a readable address
+  useEffect(() => {
+    let mounted = true;
+    if (position && mounted) {
+      setCoordinates({ lat: position.lat, lng: position.lng });
+      // try to reverse geocode, fallback to simple lat/lng label
+      (async () => {
+        const name = await reverseGeocode(position.lat, position.lng);
+        if (!mounted) return;
+        setLocationName(name || `Lat: ${position.lat}, Lng: ${position.lng}`);
+      })();
+    }
+    if (geoError) {
+      console.error('Geolocation error:', geoError);
+    }
+    return () => { mounted = false; };
+  }, [position, geoError]);
 
   // Image Upload handlers
   const handleImageChange = (e) => {
@@ -303,24 +344,31 @@ export const ReportIssue = () => {
               size="sm"
               icon={MapPin}
             >
-              Use My Current Location
+              {watching ? 'Stop Live Location' : 'Use My Current Location'}
             </Button>
           </div>
 
-          {/* Map Placeholder */}
-          <div className="w-full h-44 rounded-2xl bg-sky-50 border border-sky-100 flex flex-col items-center justify-center text-center p-4 relative overflow-hidden">
-            {/* Styled mockup of map lines */}
-            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#0369a1_1px,transparent_1px)] [background-size:16px_16px]"></div>
-            <div className="absolute h-0.5 bg-sky-200 w-full top-1/2"></div>
-            <div className="absolute w-0.5 bg-sky-200 h-full left-1/3"></div>
-            
-            <div className="relative p-3 bg-white rounded-full shadow-lg border border-slate-100 text-primary-600 animate-bounce">
-              <MapPin className="h-6 w-6 fill-primary-200" />
-            </div>
-            <p className="text-xs font-semibold text-primary-700 mt-3 relative">
-              {locationName ? locationName : "Drag pin to adjust"}
-            </p>
-            <p className="text-[10px] text-primary-400 relative mt-0.5">Mock Geolocation Preview Enabled</p>
+          {/* Live Map Picker: draggable marker to fine-tune coordinates */}
+          <div className="w-full relative">
+            {watching && (
+              <div className="absolute top-2 left-2 z-30 flex items-center gap-2 bg-white/85 text-xs text-slate-700 px-3 py-1 rounded-full shadow-sm glass">
+                <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse block"></span>
+                <span className="font-semibold">Live GPS</span>
+              </div>
+            )}
+            <MapPicker
+              lat={coordinates.lat}
+              lng={coordinates.lng}
+              onChange={({ lat, lng }) => {
+                setCoordinates({ lat, lng });
+                // attempt reverse-geocode and update locationName
+                (async () => {
+                  const name = await reverseGeocode(lat, lng);
+                  setLocationName(name || `Lat: ${lat}, Lng: ${lng}`);
+                })();
+              }}
+            />
+            <p className="text-xs text-slate-500 mt-2">{locationName || 'Drag the marker to adjust exact position'}</p>
           </div>
 
           <div className="flex justify-between pt-4 border-t border-slate-100">

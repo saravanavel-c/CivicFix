@@ -10,6 +10,7 @@ import {
   Info
 } from 'lucide-react';
 import { nearbyService } from '../services/nearbyService';
+import useGeolocation from '../hooks/useGeolocation';
 import { LoadingState } from '../components/common/LoadingState';
 import { Button } from '../components/common/Button';
 import { Toast } from '../components/common/Toast';
@@ -47,6 +48,15 @@ export const NearbyIssues = () => {
 
   useEffect(() => {
     loadNearby();
+  }, []);
+
+  const { position, getCurrent, startWatching, stopWatching, watching } = useGeolocation();
+
+  useEffect(() => {
+    // Attempt to get a snapshot and then watch for position changes for live display
+    getCurrent();
+    startWatching();
+    return () => stopWatching();
   }, []);
 
   const handleUpvote = async (id) => {
@@ -150,7 +160,17 @@ export const NearbyIssues = () => {
           {/* Compass overlay */}
           <div className="absolute top-4 right-4 bg-white/80 border border-slate-200/50 p-2.5 rounded-2xl shadow-sm backdrop-blur-sm flex items-center gap-2 pointer-events-none text-slate-500">
             <Map className="h-4.5 w-4.5 text-slate-400" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Map Live (Coimbatore)</span>
+            <div className="text-[10px] font-bold uppercase tracking-wider">
+              <div>Map Live (Coimbatore)</div>
+              {position ? (
+                <div className="text-[10px] font-normal text-slate-400 mt-0.5">{`You: ${position.lat.slice(0,8)}, ${position.lng.slice(0,8)}`}</div>
+              ) : (
+                <div className="text-[10px] font-normal text-slate-400 mt-0.5">Locating…</div>
+              )}
+            </div>
+            {watching && (
+              <div className="ml-3 bg-white/90 text-[10px] text-rose-600 px-2 py-1 rounded-full font-semibold">Live</div>
+            )}
           </div>
         </div>
 
