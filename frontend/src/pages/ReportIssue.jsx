@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
+import { classificationService } from '../services/classificationService';
 import { Button } from '../components/common/Button';
 import { FormInput } from '../components/common/FormInput';
 import { PriorityBadge } from '../components/common/PriorityBadge';
@@ -163,9 +164,11 @@ export const ReportIssue = () => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Map AI Suggestion to a calculated category or just 'Other'
-      const finalCategory = category === 'AI Suggestion' ? 'Road' : category;
-      
+      // If the citizen chose AI Auto-Detect, classify the description via the backend
+      const finalCategory = category === 'AI Suggestion'
+        ? await classificationService.classifyCategory(description)
+        : category;
+
       const newReport = await complaintService.createComplaint({
         category: finalCategory,
         description,
