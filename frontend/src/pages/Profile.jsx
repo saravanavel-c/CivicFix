@@ -6,13 +6,11 @@ import {
   HelpCircle, 
   Save, 
   Lock, 
-  Languages, 
   PhoneCall,
-  Search,
   MessageSquare,
-  Globe,
-  MapPin,
-  ChevronDown
+  ChevronDown,
+  Building,
+  Key
 } from 'lucide-react';
 import { userService } from '../services/userService';
 import { LoadingState } from '../components/common/LoadingState';
@@ -32,11 +30,13 @@ export const Profile = () => {
   const activeTab = searchParams.get('tab') || 'info';
 
   // Form states
+  const [userId, setUserId] = useState('');
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [language, setLanguage] = useState('English');
-  const [savedLocation, setSavedLocation] = useState('');
+  const [department, setDepartment] = useState('');
+  const [avatar, setAvatar] = useState('');
 
   // Password fields
   const [currentPassword, setCurrentPassword] = useState('');
@@ -52,11 +52,13 @@ export const Profile = () => {
     try {
       const u = await userService.getUserProfile();
       setProfile(u);
-      setName(u.name);
-      setEmail(u.email);
-      setPhone(u.phone);
-      setLanguage(u.preferredLanguage);
-      setSavedLocation(u.savedLocation);
+      setUserId(u.id || 'USR-C001');
+      setName(u.name || '');
+      setUsername(u.username || 'user_civic');
+      setEmail(u.email || '');
+      setPhone(u.phone || '');
+      setDepartment(u.department || '');
+      setAvatar(u.avatar || 'https://randomuser.me/api/portraits/men/32.jpg');
     } catch (err) {
       console.error("Failed to load profile:", err);
     } finally {
@@ -74,13 +76,14 @@ export const Profile = () => {
     try {
       const updated = await userService.updateUserProfile({
         name,
+        username,
         email,
         phone,
-        preferredLanguage: language,
-        savedLocation
+        department,
+        avatar
       });
       setProfile(updated);
-      setToastMsg('Profile information updated successfully.');
+      setToastMsg('Profile updated successfully.');
       setShowToast(true);
     } catch (err) {
       console.error("Failed to update profile:", err);
@@ -97,9 +100,9 @@ export const Profile = () => {
       setNewPassword('');
       setConfirmPassword('');
       setIsUpdatingPassword(false);
-      setToastMsg('Security configuration updated successfully.');
+      setToastMsg('Password updated successfully.');
       setShowToast(true);
-    }, 1000);
+    }, 800);
   };
 
   const tabs = [
@@ -119,15 +122,11 @@ export const Profile = () => {
     },
     {
       q: "Can other citizens view issues I have reported?",
-      a: "Yes, reports are displayed publicly on the 'Nearby Issues' map so neighbors are kept aware and don't file duplicates. However, your personal email and phone number are always kept strictly confidential."
+      a: "Yes, reports are displayed publicly on the 'Nearby Issues' map so neighbors are kept aware and don't file duplicates. Personal email and phone numbers are kept confidential."
     },
     {
-      q: "What is AI Categorization & Routing?",
-      a: "CivicFix uses deep learning vision systems to analyze photo attachments, auto-detect coordinates, suggest severity priorities, and route tickets directly to division managers without manual delay."
-    },
-    {
-      q: "Can I edit details after submitting a complaint?",
-      a: "For auditing safety, filed reports cannot be directly edited. You can upload comments or feedback once work begins, or contact support if incorrect locations were sent."
+      q: "What is role-based access control in CivicFix?",
+      a: "CivicFix categorizes users into Citizen, Department User, Worker, and Admin. Each role gets specialized views tailored to their workflow."
     }
   ];
 
@@ -136,14 +135,14 @@ export const Profile = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pb-12">
       {/* Title Header */}
       <div>
         <h1 className="text-xl md:text-2xl font-bold text-slate-800 font-display tracking-tight">
-          Account Settings
+          User Profile
         </h1>
         <p className="text-xs text-slate-400 mt-0.5">
-          Manage your personal details, preferred languages, security controls, and FAQ services.
+          Manage your profile information, department details, and account security.
         </p>
       </div>
 
@@ -179,17 +178,37 @@ export const Profile = () => {
           {activeTab === 'info' && (
             <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-6 animate-scale-up">
               <div className="flex flex-col sm:flex-row items-center gap-5 border-b border-slate-100 pb-5">
-                <div className="h-20 w-20 rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
-                  <img src={profile?.avatar} alt="Profile" className="w-full h-full object-cover" />
+                <div className="h-20 w-20 rounded-full bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                  <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
                 </div>
-                <div className="space-y-0.5 text-center sm:text-left">
-                  <h3 className="text-base font-bold text-slate-800">{name}</h3>
-                  <p className="text-xs text-slate-400">Citizen account member since {profile?.joinedDate}</p>
+                <div className="space-y-1 text-center sm:text-left">
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <h3 className="text-base font-bold text-slate-800">{name}</h3>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary-700 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">
+                      {profile?.role || 'Citizen'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">@{username}</p>
                 </div>
               </div>
 
               <form onSubmit={handleProfileSave} className="space-y-4">
+                {/* User ID - READ ONLY */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1 flex items-center gap-1.5">
+                      <Key className="h-3.5 w-3.5 text-slate-400" />
+                      <span>User ID (Unique Key)</span>
+                      <span className="text-[10px] text-slate-400 font-normal">[Read Only]</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={userId}
+                      disabled
+                      className="w-full px-3.5 py-2.5 text-xs bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-500 font-bold cursor-not-allowed select-all"
+                    />
+                  </div>
+
                   <FormInput 
                     label="Full Name"
                     name="name"
@@ -197,6 +216,17 @@ export const Profile = () => {
                     onChange={(e) => setName(e.target.value)}
                     required
                   />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormInput 
+                    label="Username"
+                    name="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                  />
+
                   <FormInput 
                     label="Email Address"
                     name="email"
@@ -215,28 +245,27 @@ export const Profile = () => {
                     onChange={(e) => setPhone(e.target.value)}
                     required
                   />
-                  <FormInput 
-                    label="Preferred Language"
-                    name="language"
-                    type="select"
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    options={[
-                      { value: 'English', label: 'English' },
-                      { value: 'Tamil', label: 'Tamil / தமிழ்' },
-                      { value: 'Hindi', label: 'Hindi / हिंदी' },
-                      { value: 'Malayalam', label: 'Malayalam / മലയാളം' }
-                    ]}
-                  />
+
+                  {(profile?.role === 'Department' || profile?.role === 'Worker' || department) && (
+                    <FormInput 
+                      label="Department"
+                      name="department"
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                      placeholder="e.g. Road Maintenance"
+                    />
+                  )}
                 </div>
 
-                <FormInput 
-                  label="Default Neighborhood / Coordinates Location"
-                  name="savedLocation"
-                  value={savedLocation}
-                  onChange={(e) => setSavedLocation(e.target.value)}
-                  placeholder="e.g. Gandhipuram, Coimbatore"
-                />
+                <div>
+                  <FormInput 
+                    label="Profile Photo URL"
+                    name="avatar"
+                    value={avatar}
+                    onChange={(e) => setAvatar(e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
 
                 <div className="flex justify-end pt-3 border-t border-slate-100">
                   <Button 
@@ -305,48 +334,27 @@ export const Profile = () => {
                   </Button>
                 </div>
               </form>
-
-              {/* Two Factor Mock */}
-              <div className="pt-6 border-t border-slate-100 space-y-4">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-800 font-display">Two-Factor Authentication (2FA)</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Secure your civic credentials with one-time verification pins.</p>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-semibold text-slate-700">SMS Verification Codes</p>
-                    <p className="text-[10px] text-slate-400">Receive logins verification pins on {phone}</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
-                  </label>
-                </div>
-              </div>
             </div>
           )}
 
-          {/* TAB 3: HELP & SUPPORT FAQ */}
+          {/* TAB 3: HELP & SUPPORT */}
           {activeTab === 'help' && (
             <div className="space-y-6 animate-scale-up">
-              
-              {/* Emergency Helplines banner */}
               <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 bg-primary-50 rounded-2xl border border-primary-100/50 space-y-2 text-center sm:text-left">
                   <PhoneCall className="h-5 w-5 text-primary-600 mx-auto sm:mx-0" />
-                  <p className="text-xs font-bold text-slate-800">Municipal Grievances Hotline</p>
+                  <p className="text-xs font-bold text-slate-800">Municipal Grievances Helpline</p>
                   <p className="text-lg font-bold text-primary-600 font-display">1800-425-1080</p>
                   <p className="text-[10px] text-slate-400">Toll-free | Operational 24/7</p>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2 text-center sm:text-left">
                   <MessageSquare className="h-5 w-5 text-slate-500 mx-auto sm:mx-0" />
-                  <p className="text-xs font-bold text-slate-800">CivicFix AI Whatsapp Bot</p>
+                  <p className="text-xs font-bold text-slate-800">CivicFix AI Support Bot</p>
                   <p className="text-lg font-bold text-slate-700 font-display">+91 90033 12345</p>
-                  <p className="text-[10px] text-slate-400">Text 'Report' to file via Chat</p>
+                  <p className="text-[10px] text-slate-400">Text 'Support' for Instant Assistance</p>
                 </div>
               </div>
 
-              {/* FAQs Accordion */}
               <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-4">
                 <h3 className="text-sm font-bold text-slate-800 font-display">Frequently Asked Questions</h3>
                 <div className="divide-y divide-slate-100">
@@ -372,38 +380,6 @@ export const Profile = () => {
                   })}
                 </div>
               </div>
-
-              {/* Send message form */}
-              <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-4">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-800 font-display">Submit a Support Ticket</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Need help with account access or feedback? Send our web team a message.</p>
-                </div>
-                <div className="space-y-4">
-                  <FormInput 
-                    label="Subject Title"
-                    name="supportSubject"
-                    placeholder="e.g. Account credentials sync issue"
-                  />
-                  <FormInput 
-                    label="Message Description"
-                    name="supportMessage"
-                    type="textarea"
-                    placeholder="Describe what you need help with..."
-                    rows={4}
-                  />
-                  <Button 
-                    onClick={() => {
-                      setToastMsg('Support ticket sent successfully. Our team will email you.');
-                      setShowToast(true);
-                    }}
-                    variant="primary" 
-                    size="sm"
-                  >
-                    Submit Support Ticket
-                  </Button>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -419,4 +395,5 @@ export const Profile = () => {
     </div>
   );
 };
+
 export default Profile;

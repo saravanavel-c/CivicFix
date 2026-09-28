@@ -1,35 +1,82 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Plus, 
   FileText, 
   Bell, 
-  User 
+  User,
+  Users,
+  MapPin,
+  TrendingUp,
+  Wrench,
+  ShieldCheck,
+  Building2
 } from 'lucide-react';
 import { notificationService } from '../services/notificationService';
+import { userService } from '../services/userService';
 
 export const MobileNavigation = () => {
   const [unreadCount, setUnreadCount] = useState(0);
+  const [role, setRole] = useState('citizen');
+  const location = useLocation();
 
   useEffect(() => {
-    const fetchUnread = async () => {
+    const fetchRoleAndUnread = async () => {
+      const currentRole = await userService.getCurrentRole();
+      setRole(currentRole);
+
+      if (location.pathname.startsWith('/admin')) {
+        setRole('admin');
+      } else if (location.pathname.startsWith('/department')) {
+        setRole('department');
+      } else if (location.pathname.startsWith('/worker')) {
+        setRole('worker');
+      } else if (location.pathname.startsWith('/citizen') || location.pathname === '/report' || location.pathname === '/nearby' || location.pathname === '/complaints') {
+        setRole('citizen');
+      }
+
       const count = await notificationService.getUnreadCount();
       setUnreadCount(count);
     };
-    fetchUnread();
 
-    const interval = setInterval(fetchUnread, 1500);
-    return () => clearInterval(interval);
-  }, []);
+    fetchRoleAndUnread();
+  }, [location.pathname]);
 
-  const navItems = [
-    { to: '/dashboard', label: 'Home', icon: LayoutDashboard },
-    { to: '/complaints', label: 'Complaints', icon: FileText },
-    { to: '/report', label: 'Report', icon: Plus, isAction: true },
-    { to: '/notifications', label: 'Alerts', icon: Bell, badge: unreadCount },
-    { to: '/profile', label: 'Profile', icon: User }
-  ];
+  const getNavItems = () => {
+    switch (role) {
+      case 'admin':
+        return [
+          { to: '/admin/dashboard', label: 'Users', icon: Users },
+          { to: '/login', label: 'Login Roles', icon: ShieldCheck },
+          { to: '/profile', label: 'Profile', icon: User }
+        ];
+      case 'department':
+        return [
+          { to: '/department/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { to: '/department/heatmap', label: 'Heatmap', icon: MapPin },
+          { to: '/department/prediction', label: 'Predict', icon: TrendingUp },
+          { to: '/profile', label: 'Profile', icon: User }
+        ];
+      case 'worker':
+        return [
+          { to: '/worker/dashboard', label: 'Tasks', icon: Wrench },
+          { to: '/login', label: 'Roles', icon: ShieldCheck },
+          { to: '/profile', label: 'Profile', icon: User }
+        ];
+      case 'citizen':
+      default:
+        return [
+          { to: '/dashboard', label: 'Home', icon: LayoutDashboard },
+          { to: '/complaints', label: 'Complaints', icon: FileText },
+          { to: '/report', label: 'Report', icon: Plus, isAction: true },
+          { to: '/notifications', label: 'Alerts', icon: Bell, badge: unreadCount },
+          { to: '/profile', label: 'Profile', icon: User }
+        ];
+    }
+  };
+
+  const navItems = getNavItems();
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-4 py-2 flex items-center justify-around pb-safe-bottom">
@@ -77,3 +124,5 @@ export const MobileNavigation = () => {
     </nav>
   );
 };
+
+export default MobileNavigation;
