@@ -1,7 +1,7 @@
 // CivicFix Citizen Dashboard - Mock Data
 
 export const mockUser = {
-  name: "Saravana Vel",
+  name: "Saravanavel",
   email: "saravana.vel@civicfix.gov.in",
   phone: "+91 98765 43210",
   avatar: "https://randomuser.me/api/portraits/men/32.jpg",

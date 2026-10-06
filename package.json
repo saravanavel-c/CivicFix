@@ -1,0 +1,25 @@
+{
+  "name": "civicfix",
+  "version": "1.0.0",
+  "description": "**CivicFix** is an AI-assisted civic issue reporting and resolution platform that connects citizens with municipal authorities. Citizens can report issues such as potholes, overflowing garbage, broken streetlights, water leakage, and drainage problems using images, location, and descriptions.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"npm start --prefix backend\" \"npm run dev --prefix frontend\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saravanavel-c/CivicFix.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/saravanavel-c/CivicFix/issues"
+  },
+  "homepage": "https://github.com/saravanavel-c/CivicFix#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}

@@ -51,9 +51,6 @@ The application will be available at the localhost:5173.
 
 - The app now uses a free, high-quality basemap (CartoDB Voyager via Leaflet) and a draggable map picker so users can precisely set the report location.
 - Live GPS tracking is supported (watchPosition). Users can start/stop live tracking from the Report Issue flow and see a small "Live GPS" badge while tracking is active.
-- **Automatic Location Fetching:** The app automatically requests the user's location as soon as they enter Step 2 (Set Location) of the report flow.
-- **Robust Fallback Mechanism:** If high-accuracy GPS fails or times out (common on desktop browsers/devices without GPS hardware), the app automatically falls back to low-accuracy (Wi-Fi/IP-based) location.
-- **Toast Notifications:** Displays clear error messages to the user if geolocation is blocked or fails entirely.
 - The marker on the map is draggable for fine adjustments; a mini-map preview and custom zoom controls were added for a polished UI.
 - The app persists the last-known location to localStorage so it can be reused across sessions.
 
@@ -92,3 +89,34 @@ Reverse geocoding (lat/lng -> readable address) uses Nominatim (OpenStreetMap) b
 - If you want a different basemap style, I can switch to Positron (Carto) or Stamen toner/toner-lite.
 - I can also add an optional API-key-based reverse geocoding provider and an admin setting to configure which provider to use.
 
+## AI Category Classification (New)
+
+- When a citizen picks "AI Auto-Detect Category" in the Report Issue flow, the issue is classified into one of the app's categories (Road, Sanitation, Drainage, Water, Electricity, Other) automatically.
+- **If a photo is attached** (uploaded file or one of the preset simulation images), classification uses **Gemini 2.5 Flash** (vision) — the photo plus the description (if any) are sent together for higher accuracy.
+- **If no photo is available**, classification falls back to **text-only** classification via Groq (`llama-3.1-8b-instant`) using just the description.
+- All classification happens server-side only — API keys are never exposed to the browser.
+- If the classification service is unreachable or errors, the frontend falls back to `Other` rather than blocking submission.
+
+Files added/changed:
+- [backend/server.js](backend/server.js) — Express server, `/api/classify` endpoint (routes to image or text classification depending on what's provided)
+- [backend/classifier.js](backend/classifier.js) — Groq text-only classification
+- [backend/imageClassifier.js](backend/imageClassifier.js) — Gemini vision classification (image + optional text), plus a helper to fetch remote preset images server-side
+- [frontend/src/services/classificationService.js](frontend/src/services/classificationService.js) — frontend client; converts an uploaded photo to base64 or passes a preset's URL, and sends it alongside the description
+- [frontend/src/pages/ReportIssue.jsx](frontend/src/pages/ReportIssue.jsx) — tracks the raw uploaded file/preset URL and calls the classifier on submit when "AI Suggestion" is selected
+- [frontend/vite.config.js](frontend/vite.config.js) — dev proxy from `/api` to the backend
+
+### Backend Setup
+
+```bash
+cd backend
+npm install
+cp .env.example .env
+# edit .env and set:
+#   GROQ_API_KEY   (free key from https://console.groq.com)   - used for text-only classification
+#   GEMINI_API_KEY (free key from https://aistudio.google.com) - used for image classification
+npm start
+```
+
+The backend runs on `http://localhost:5000` by default. With the frontend dev server running separately (`npm run dev` in `frontend/`), Vite proxies `/api` requests to the backend automatically — no extra config needed in dev.
+
+For production, set `VITE_API_BASE_URL` in the frontend's environment to point at your deployed backend's URL.

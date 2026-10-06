@@ -12,16 +12,18 @@ import {
   Check, 
   CheckCircle,
   Eye,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
 import { classificationService } from '../services/classificationService';
+import { analysisService } from '../services/analysisService';
 import { Button } from '../components/common/Button';
 import { FormInput } from '../components/common/FormInput';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import useGeolocation from '../hooks/useGeolocation';
 import MapPicker from '../components/common/MapPicker';
-import { Toast } from '../components/common/Toast';
 
 // Sample high-quality mock images of civic issues for easy simulation click
 const PRESET_MOCK_IMAGES = [
@@ -39,6 +41,9 @@ const PRESET_MOCK_IMAGES = [
   }
 ];
 
+// Ordinal ranking used to only ever escalate a citizen's manual priority choice, never downgrade it
+const PRIORITY_ORDER = { Low: 1, Medium: 2, High: 3 };
+
 export const ReportIssue = () => {
   const [step, setStep] = useState(1);
   const [image, setImage] = useState(null);
@@ -54,8 +59,12 @@ export const ReportIssue = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdId, setCreatedId] = useState(null);
   const [formErrors, setFormErrors] = useState({});
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState('success');
+
+  // AI analysis states (validation, duplicate detection, priority scoring)
+  const [resolvedCategory, setResolvedCategory] = useState(null);
+  const [analysis, setAnalysis] = useState(null); // { validation, duplicates, priority }
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
 
   const navigate = useNavigate();
 
@@ -106,13 +115,6 @@ export const ReportIssue = () => {
     }
   };
 
-  // Automatically trigger location fetch when entering Step 2
-  useEffect(() => {
-    if (step === 2 && !coordinates.lat && !coordinates.lng) {
-      handleGetLocation();
-    }
-  }, [step]);
-
   // Apply position updates to local form state and reverse-geocode to a readable address
   useEffect(() => {
     let mounted = true;
@@ -127,11 +129,45 @@ export const ReportIssue = () => {
     }
     if (geoError) {
       console.error('Geolocation error:', geoError);
-      setToastType('error');
-      setToastMessage(`Failed to get live location: ${geoError.message || 'Permission denied or timeout'}. Please check your browser/system location settings.`);
     }
     return () => { mounted = false; };
   }, [position, geoError]);
+
+  // Run validation + duplicate detection + priority scoring once the citizen reaches Review
+  useEffect(() => {
+    if (step !== 5) return;
+
+    let cancelled = false;
+    (async () => {
+      setIsAnalyzing(true);
+      setDuplicateConfirmed(false);
+      try {
+        const finalCategory = category === 'AI Suggestion'
+          ? await classificationService.classifyCategory(description)
+          : category;
+        if (cancelled) return;
+        setResolvedCategory(finalCategory);
+
+        const existingComplaints = await complaintService.getMyComplaints();
+        if (cancelled) return;
+
+        const result = await analysisService.analyzeComplaint({
+          description,
+          category: finalCategory,
+          latitude: coordinates.lat,
+          longitude: coordinates.lng,
+          existingComplaints,
+        });
+        if (cancelled) return;
+        setAnalysis(result);
+      } finally {
+        if (!cancelled) setIsAnalyzing(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   // Image Upload handlers
   const handleImageChange = (e) => {
@@ -174,12 +210,33 @@ export const ReportIssue = () => {
   };
 
   const handleSubmit = async () => {
+    // Block submission if the description failed validation (spam/gibberish/not a real complaint)
+    if (analysis?.validation && analysis.validation.isValid === false) {
+      setFormErrors((prev) => ({
+        ...prev,
+        submit: analysis.validation.reason || 'This does not appear to be a valid complaint.',
+      }));
+      return;
+    }
+
+    // Require explicit confirmation before filing a likely duplicate
+    if (analysis?.duplicates?.length > 0 && !duplicateConfirmed) {
+      setFormErrors((prev) => ({
+        ...prev,
+        submit: 'Please confirm you want to submit despite the possible duplicate above.',
+      }));
+      return;
+    }
+
+    setFormErrors((prev) => ({ ...prev, submit: null }));
     setIsSubmitting(true);
     try {
-      // If the citizen chose AI Auto-Detect, classify the description via the backend
-      const finalCategory = category === 'AI Suggestion'
-        ? await classificationService.classifyCategory(description)
-        : category;
+      const finalCategory = resolvedCategory || (category === 'AI Suggestion' ? 'Other' : category);
+
+      // AI priority can only escalate the citizen's manual choice, never downgrade it
+      const aiPriority = analysis?.priority?.priority;
+      const finalPriority =
+        aiPriority && PRIORITY_ORDER[aiPriority] > PRIORITY_ORDER[priority] ? aiPriority : priority;
 
       const newReport = await complaintService.createComplaint({
         category: finalCategory,
@@ -188,7 +245,7 @@ export const ReportIssue = () => {
         latitude: coordinates.lat,
         longitude: coordinates.lng,
         image,
-        priority: priority
+        priority: finalPriority
       });
       setCreatedId(newReport.id);
       setStep(6); // Confirmation screen
@@ -209,6 +266,10 @@ export const ReportIssue = () => {
     setPriority('Medium');
     setCreatedId(null);
     setFormErrors({});
+    setResolvedCategory(null);
+    setAnalysis(null);
+    setIsAnalyzing(false);
+    setDuplicateConfirmed(false);
   };
 
   return (
@@ -568,8 +629,8 @@ export const ReportIssue = () => {
                   <p className="text-xs font-semibold text-slate-800 mt-0.5 flex items-center gap-1">
                     {category === 'AI Suggestion' ? (
                       <>
-                        <Sparkles size={12} className="text-violet-500 animate-pulse" />
-                        AI Auto (Pothole/Road)
+                        <Sparkles size={12} className="text-violet-500" />
+                        {isAnalyzing ? 'Detecting...' : `AI Auto (${resolvedCategory || '...'})`}
                       </>
                     ) : category}
                   </p>
@@ -577,7 +638,14 @@ export const ReportIssue = () => {
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Severity Priority</p>
                   <div className="mt-0.5">
-                    <PriorityBadge priority={priority} />
+                    <PriorityBadge
+                      priority={
+                        analysis?.priority?.priority &&
+                        PRIORITY_ORDER[analysis.priority.priority] > PRIORITY_ORDER[priority]
+                          ? analysis.priority.priority
+                          : priority
+                      }
+                    />
                   </div>
                 </div>
               </div>
@@ -598,17 +666,79 @@ export const ReportIssue = () => {
               </div>
             </div>
 
-            {/* AI suggest metrics */}
-            <div className="p-4 bg-violet-50/30 flex items-start gap-3">
-              <Sparkles className="text-violet-600 shrink-0 h-4.5 w-4.5 stroke-[2] mt-0.5" />
-              <div className="space-y-0.5">
-                <p className="text-xs font-bold text-violet-800">Mock AI Analyzer suggestion</p>
-                <p className="text-[10px] text-violet-500 leading-relaxed">
-                  Based on similarity models, this issue matches 94% confidence for standard maintenance works. No duplicate reports found nearby.
-                </p>
+            {/* AI analysis: validation / duplicates / priority reasoning */}
+            <div className="p-4 bg-violet-50/30 space-y-3">
+              <div className="flex items-start gap-3">
+                <Sparkles className="text-violet-600 shrink-0 h-4.5 w-4.5 stroke-[2] mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="text-xs font-bold text-violet-800">AI Analysis</p>
+                  {isAnalyzing ? (
+                    <p className="text-[10px] text-violet-500 flex items-center gap-1.5">
+                      <Loader2 size={11} className="animate-spin" />
+                      Checking for duplicates and assessing priority...
+                    </p>
+                  ) : analysis ? (
+                    <p className="text-[10px] text-violet-500 leading-relaxed">
+                      {analysis.validation?.isValid === false
+                        ? 'This description could not be validated as a genuine complaint.'
+                        : analysis.duplicates?.length > 0
+                          ? `${analysis.duplicates.length} similar nearby report(s) found. Suggested priority: ${analysis.priority?.priority || priority}.`
+                          : `No duplicate reports found nearby. Suggested priority: ${analysis.priority?.priority || priority}.`}
+                    </p>
+                  ) : null}
+                </div>
               </div>
+
+              {/* Validation failure banner */}
+              {!isAnalyzing && analysis?.validation?.isValid === false && (
+                <div className="flex items-start gap-2 bg-rose-50 border border-rose-200 rounded-xl p-3">
+                  <AlertCircle size={14} className="text-rose-500 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-rose-600 leading-relaxed">
+                    {analysis.validation.reason || 'This does not appear to be a valid civic complaint.'}{' '}
+                    Please go back and revise your description.
+                  </p>
+                </div>
+              )}
+
+              {/* Duplicate warning + confirmation */}
+              {!isAnalyzing && analysis?.validation?.isValid !== false && analysis?.duplicates?.length > 0 && (
+                <div className="space-y-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-semibold text-amber-700">Possible duplicate report(s)</p>
+                      <ul className="text-[10px] text-amber-600 space-y-0.5">
+                        {analysis.duplicates.map((dup) => (
+                          <li key={dup.id}>
+                            {dup.id} — {Math.round(dup.similarity * 100)}% similar
+                            {dup.distanceMeters !== null ? `, ${dup.distanceMeters}m away` : ''}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 pl-6 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={duplicateConfirmed}
+                      onChange={(e) => {
+                        setDuplicateConfirmed(e.target.checked);
+                        setFormErrors((prev) => ({ ...prev, submit: null }));
+                      }}
+                      className="accent-amber-600 cursor-pointer"
+                    />
+                    <span className="text-[10px] font-medium text-amber-700">
+                      This is a separate issue — submit anyway
+                    </span>
+                  </label>
+                </div>
+              )}
             </div>
           </div>
+
+          {formErrors.submit && (
+            <p className="text-xs text-rose-500 text-center font-medium">{formErrors.submit}</p>
+          )}
 
           <div className="flex justify-between pt-4 border-t border-slate-100">
             <Button onClick={handleBack} variant="outline" size="md">
@@ -671,14 +801,6 @@ export const ReportIssue = () => {
             File Another Issue
           </button>
         </div>
-      )}
-
-      {toastMessage && (
-        <Toast 
-          message={toastMessage} 
-          type={toastType} 
-          onClose={() => setToastMessage('')} 
-        />
       )}
     </div>
   );

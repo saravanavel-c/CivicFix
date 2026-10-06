@@ -62,6 +62,9 @@ export const complaintService = {
       status: 'Submitted',
       assignedDepartment: categoryDeptMap[data.category] || 'Road Maintenance',
       image: data.image || 'https://images.unsplash.com/photo-1515162305285-0293e4767cc2?w=600&auto=format&fit=crop&q=80',
+      // IDs of existing complaints this one was flagged as a possible duplicate of
+      // (set by the AI triage step in ReportIssue.jsx) - empty array if none found
+      possibleDuplicateOf: data.possibleDuplicateOf || [],
       timeline: [
         { status: 'Submitted', timestamp: new Date().toLocaleString('en-US', { hour12: true }), completed: true },
         { status: 'Acknowledged', timestamp: null, completed: false },
