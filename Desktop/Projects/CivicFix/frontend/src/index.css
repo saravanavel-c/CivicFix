@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-display: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Brand color overrides - trustworthy civic blue & emerald success */
+  --color-primary-50: #f0f7ff;
+  --color-primary-100: #e0effe;
+  --color-primary-500: #0284c7;
+  --color-primary-600: #0369a1;
+  --color-primary-700: #075985;
+  --color-primary-800: #0c4a6e;
+  
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+}
+
+/* Custom base resets and utilities */
+@layer base {
+  html, body, #root {
+    @apply h-full min-h-screen bg-slate-50/60 text-slate-800 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold tracking-tight text-slate-900;
+  }
+}
+
+/* Smooth micro-interactions */
+.transition-card {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+.transition-card:hover {
+  @apply -translate-y-0.5 shadow-md border-slate-300;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-100 rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Glassmorphism subtle effect */
+.glass {
+  @apply bg-white/80 backdrop-blur-md border border-white/40;
+}
+
+/* Map UI enhancements */
+.cf-leaflet {
+  border-radius: 1rem;
+}
+
+.cf-pin-wrap {
+  display: block;
+}
+
+.cf-pin {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  transform: rotate(-45deg);
+  left: 0;
+}
+
+.cf-pin-inner {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  background: var(--color-primary-600);
+  border-radius: 50% 50% 50% 50%;
+  box-shadow: 0 6px 18px rgba(2,132,199,0.18);
+  transform: rotate(45deg);
+}
+
+.cf-pin::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 4px;
+  background: rgba(0,0,0,0.12);
+  border-radius: 50%;
+  filter: blur(2px);
+}
+
+.cf-pin-inner::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+}
+
+.map-locate-control .map-locate-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: white;
+  color: var(--color-primary-600);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(2,132,199,0.12);
+  margin: 6px;
+  text-decoration: none;
+}
+
+.map-locate-control .map-locate-btn:hover {
+  background: var(--color-primary-50);
+}
+
+.leaflet-control .leaflet-bar a {
+  border: none;
+}
+
+/* Smooth marker movement */
+.leaflet-marker-icon, .leaflet-marker-shadow {
+  transition: transform 260ms ease-out, opacity 200ms ease;
+}
+
+.cf-zoom-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(2,132,199,0.08);
+  color: var(--color-primary-600);
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.cf-zoom-btn:hover {
+  background: var(--color-primary-50);
+}
+
+.cf-mini-map .leaflet-container {
+  border-radius: 8px;
+}
