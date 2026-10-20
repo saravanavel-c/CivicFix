@@ -1,21 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Camera, 
-  Upload, 
-  MapPin, 
-  Mic, 
-  MicOff, 
-  Sparkles, 
-  ArrowLeft, 
-  ArrowRight, 
-  Check, 
-  CheckCircle,
-  Eye,
-  AlertCircle,
-  AlertTriangle,
-  Loader2
-} from 'lucide-react';
+import { Camera, MapPin, Mic, MicOff, Sparkles, ArrowLeft, Check, CheckCircle, Eye, AlertCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
 import { classificationService } from '../services/classificationService';
 import { analysisService } from '../services/analysisService';

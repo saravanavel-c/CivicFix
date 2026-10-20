@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, SlidersHorizontal, RefreshCw, AlertCircle, Plus } from 'lucide-react';
+import { Search, SlidersHorizontal, AlertCircle, Plus } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
 import { ComplaintCard } from '../components/common/ComplaintCard';
 import { LoadingState } from '../components/common/LoadingState';

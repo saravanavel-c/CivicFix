@@ -1,19 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Building2, 
-  FileCheck2, 
-  Users, 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle, 
-  Filter, 
-  ArrowRight,
-  MapPin,
-  ChevronRight,
-  TrendingUp,
-  Map
-} from 'lucide-react';
+import { FileCheck2, Users, CheckCircle2, Filter, MapPin, ChevronRight, TrendingUp, Map } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
 import { userService } from '../services/userService';
 import { LoadingState } from '../components/common/LoadingState';

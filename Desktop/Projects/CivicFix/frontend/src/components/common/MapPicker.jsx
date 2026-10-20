@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import markerRetina from 'leaflet/dist/images/marker-icon-2x.png';
@@ -29,6 +29,44 @@ function MapController({ setMap }) {
   return null;
 }
 
+// Defined at module scope so React does not remount the Leaflet control on
+// every parent render.
+function LocateControl({ onLocated }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const control = L.control({ position: 'topleft' });
+    const container = L.DomUtil.create('div', 'leaflet-bar map-locate-control');
+    const btn = L.DomUtil.create('a', 'map-locate-btn', container);
+    btn.href = '#';
+    btn.title = 'Center map to your location';
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M21 12a9 9 0 0 0-9-9"></path></svg>';
+
+    control.onAdd = function() { return container; };
+    control.addTo(map);
+
+    L.DomEvent.on(btn, 'click', (e) => {
+      L.DomEvent.stopPropagation(e);
+      L.DomEvent.preventDefault(e);
+      map.locate({ setView: true, maxZoom: 18 });
+    });
+
+    function onLocationFound(e) {
+      const latlng = e.latlng;
+      if (onLocated) onLocated(latlng);
+    }
+
+    map.on('locationfound', onLocationFound);
+
+    return () => {
+      control.remove();
+      map.off('locationfound', onLocationFound);
+    };
+  }, [map, onLocated]);
+
+  return null;
+}
+
 export const MapPicker = ({ lat, lng, zoom = 16, onChange }) => {
   const defaultPos = lat && lng ? [Number(lat), Number(lng)] : [11.0168, 76.9558];
   const [markerPos, setMarkerPos] = useState(defaultPos);
@@ -45,43 +83,14 @@ export const MapPicker = ({ lat, lng, zoom = 16, onChange }) => {
     if (onChange) onChange({ lat: String(position.lat), lng: String(position.lng) });
   };
 
+  const handleLocated = useCallback((latlng) => {
+    setMarkerPos([latlng.lat, latlng.lng]);
+    if (onChange) onChange({ lat: String(latlng.lat), lng: String(latlng.lng) });
+  }, [onChange]);
+
   // custom div icon for a modern pin (rounded + drop shadow + pulse)
   const pinHtml = '<span class="cf-pin"><span class="cf-pin-inner"></span></span>';
   const pinIcon = L.divIcon({ className: 'cf-pin-wrap', html: pinHtml, iconSize: [30, 42], iconAnchor: [15, 42] });
-
-  function LocateControl({ onLocated }) {
-    const map = useMap();
-    useEffect(() => {
-      const control = L.control({ position: 'topleft' });
-      const container = L.DomUtil.create('div', 'leaflet-bar map-locate-control');
-      const btn = L.DomUtil.create('a', 'map-locate-btn', container);
-      btn.href = '#';
-      btn.title = 'Center map to your location';
-      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M21 12a9 9 0 0 0-9-9"></path></svg>';
-
-      control.onAdd = function() { return container; };
-      control.addTo(map);
-
-      L.DomEvent.on(btn, 'click', (e) => {
-        L.DomEvent.stopPropagation(e);
-        L.DomEvent.preventDefault(e);
-        map.locate({ setView: true, maxZoom: 18 });
-      });
-
-      function onLocationFound(e) {
-        const latlng = e.latlng;
-        if (onLocated) onLocated(latlng);
-      }
-
-      map.on('locationfound', onLocationFound);
-
-      return () => {
-        control.remove();
-        map.off('locationfound', onLocationFound);
-      };
-    }, [onLocated]);
-    return null;
-  }
 
   return (
     <div className="w-full h-44 rounded-2xl overflow-hidden relative">
@@ -90,10 +99,7 @@ export const MapPicker = ({ lat, lng, zoom = 16, onChange }) => {
           attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> &amp; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
-        <LocateControl onLocated={(latlng) => {
-          setMarkerPos([latlng.lat, latlng.lng]);
-          if (onChange) onChange({ lat: String(latlng.lat), lng: String(latlng.lng) });
-        }} />
+        <LocateControl onLocated={handleLocated} />
 
         <Marker position={markerPos} icon={pinIcon} draggable={true} eventHandlers={{ dragend: handleDragEnd }}>
           <Popup>

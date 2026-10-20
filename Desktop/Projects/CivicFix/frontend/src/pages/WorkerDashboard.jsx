@@ -1,17 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Wrench, 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle, 
-  Upload, 
-  Image as ImageIcon, 
-  FileText, 
-  MapPin, 
-  Check, 
-  Sparkles,
-  ChevronDown
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Wrench, CheckCircle2, Image as ImageIcon, MapPin, ChevronDown } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
 import { userService } from '../services/userService';
 import { Button } from '../components/common/Button';

@@ -1,16 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Calendar, 
-  Building, 
-  Clock, 
-  Star, 
-  AlertCircle,
-  CheckCircle,
-  Eye
-} from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Building, Star, AlertCircle, CheckCircle } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { PriorityBadge } from '../components/common/PriorityBadge';
@@ -218,7 +208,6 @@ export const ComplaintDetail = () => {
             <div className="relative pl-6 space-y-6 border-l border-slate-150">
               {complaint.timeline.map((item, index) => {
                 const isCompleted = item.completed;
-                const isCurrent = complaint.status === item.status;
                 
                 return (
                   <div key={index} className="relative">

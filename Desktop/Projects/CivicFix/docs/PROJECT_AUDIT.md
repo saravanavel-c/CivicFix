@@ -5,6 +5,11 @@
 **Repository:** https://github.com/saravanavel-c/CivicFix  
 **Auditor:** Kiro (AI Senior Full-Stack Engineer)
 
+> **Status: point-in-time audit of commit `db64fec`.** The Supabase integration
+> described as "planned" below has since shipped — see `docs/DATABASE_SCHEMA.md`
+> and `docs/API_DOCUMENTATION.md` for the current state. Defects that have been
+> resolved are marked inline.
+
 ---
 
 ## 1. Executive Summary
@@ -87,7 +92,7 @@ The current codebase is feature-rich on the frontend but **all data persistence 
 ### G. Database / Storage
 - **Current:** Browser `localStorage` seeded from `mockData.js` and `mockUsers.js`
 - **Planned:** Supabase PostgreSQL + Supabase Storage
-- **Supabase migration:** `supabase/migrations/20261018000000_initial_schema.sql` exists with tables `profiles`, `reports`, `report_status_history` — **contains a SQL syntax bug** (`create or function` instead of `create or replace function`)
+- **Supabase migration:** `supabase/migrations/20261018000000_initial_schema.sql` defines tables `profiles`, `reports`, `report_status_history`. The `create or function` → `create or replace function` syntax bug noted in this audit has since been fixed; `20261020000000_fix_history_guards_and_storage.sql` adds the write RPCs, the protected-column guard and storage provisioning.
 
 ### H. Authentication
 - **Current:** Simulated role-switcher via `localStorage` `ROLE` key — no real auth
@@ -194,7 +199,7 @@ graph TD
 | D2 | **No authentication** | `Login.jsx`, `userService.js` | Any user can select any role (admin, officer) by clicking a button. No credentials verified. |
 | D3 | **`.env` committed to git** | `frontend/.env` | Supabase URL + publishable key in version control. Publishable key is safe to expose but URL should be in `.env.example` only. |
 | D4 | **`node_modules` committed at repo root** | `node_modules/` in git tree | Repository bloated; `concurrently` deps tracked in git. Needs root-level `.gitignore`. |
-| D5 | **SQL syntax bug in migration** | `supabase/migrations/...sql` | `create or function` (line ~68) is invalid SQL. Migration will fail on apply. Must be `create or replace function`. |
+| D5 | ~~**SQL syntax bug in migration**~~ **RESOLVED** | `supabase/migrations/...sql` | The `create or function` typo no longer exists; the file uses `create or replace function` and applies cleanly. |
 
 ### HIGH (P1 — Core Functionality Broken)
 

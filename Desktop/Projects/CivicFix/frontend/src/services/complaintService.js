@@ -113,8 +113,12 @@ function normalize(r) {
     aiConfidence:        r.ai_confidence,
     // Worker / assignment fields (preserved for dept/worker dashboards)
     assignedTo:          r.assigned_to,
-    workerIds:           r.worker_ids   || [],
-    workerUpdates:       r.worker_updates || [],
+    // Worker assignment fields are local-only: WORKER_ASSIGNMENTS in
+    // localStorage (see the department/worker helpers below). The reports
+    // table has no worker_ids / worker_updates columns, so keep the shape
+    // the dashboards expect but never read them off the DB row.
+    workerIds:           [],
+    workerUpdates:       [],
     timeline:            buildTimeline(r),
     authorityUpdate:     'Report logged in Supabase.',
     resolution:          null,

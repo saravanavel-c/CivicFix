@@ -1,6 +1,9 @@
 # Database Schema — CivicFix Supabase Integration
 
-**Migration file:** `supabase/migrations/20261018000000_initial_schema.sql`
+**Migration files (apply in order):**
+
+1. `supabase/migrations/20261018000000_initial_schema.sql` — enums, tables, triggers, RLS policies
+2. `supabase/migrations/20261020000000_fix_history_guards_and_storage.sql` — single-writer audit trail, protected-column guard, atomic RPCs, storage bucket provisioning
 
 ---
 
@@ -76,7 +79,8 @@ Immutable audit trail. No UPDATE or DELETE is permitted.
 |---|---|---|---|---|
 | `on_auth_user_created` | `auth.users` | AFTER INSERT | `handle_new_user()` | Auto-creates `profiles` row with `role = 'citizen'` |
 | `on_report_created` | `reports` | AFTER INSERT | `handle_new_report()` | Auto-inserts initial `submitted` history entry |
-| `on_report_status_change` | `reports` | AFTER UPDATE OF status | `handle_report_status_change()` | Auto-inserts history row on every status transition |
+| `on_report_status_change` | `reports` | AFTER UPDATE OF status | `handle_report_status_change()` | Single writer of status history. Reads the actor and comment from the transaction-local `civicfix.actor` / `civicfix.comment` settings written by the RPCs, falling back to `auth.uid()` |
+| `guard_protected_report_columns` | `reports` | BEFORE UPDATE | `guard_protected_report_columns()` | Raises `42501` when a non-officer changes `status`, `priority` or `assigned_to`. `auth.uid()` is null for the service_role key, so the backend is unaffected |
 | `update_reports_updated_at` | `reports` | BEFORE UPDATE | `update_updated_at_column()` | Keeps `updated_at` current |
 | `update_profiles_updated_at` | `profiles` | BEFORE UPDATE | `update_updated_at_column()` | Keeps `updated_at` current |
 
@@ -98,7 +102,7 @@ Immutable audit trail. No UPDATE or DELETE is permitted.
 | Policy | Operation | Rule |
 |---|---|---|
 | `reports_select_public` | SELECT | `true` — public transparency |
-| `reports_insert_authenticated` | INSERT | `auth.role() = 'authenticated'` AND `user_id = auth.uid() OR user_id IS NULL` |
+| `reports_insert_authenticated` | INSERT | `auth.role() = 'authenticated'` AND `user_id = auth.uid()` (anonymous inserts removed in migration 2) |
 | `reports_update` | UPDATE | `auth.uid() = user_id` OR `is_officer_or_admin()` |
 | `reports_delete_admin` | DELETE | `is_admin()` only |
 
@@ -123,6 +127,21 @@ Both are `SECURITY DEFINER` — they read profiles with elevated permission so R
 
 ---
 
+## 5.1 Write RPCs
+
+Status and assignment changes are single transactions, so the report row and
+its audit entry can never disagree. Execute is revoked from `public` and
+granted to `service_role` only — these are backend-only calls.
+
+| Function | Signature | Behavior |
+|---|---|---|
+| `transition_report_status()` | `(p_report_id uuid, p_new_status report_status, p_comment text, p_changed_by uuid)` → `reports` | Locks the row, updates `status`, maintains `resolved_at`, and lets the AFTER trigger write the history row |
+| `assign_report()` | `(p_report_id uuid, p_officer_id uuid, p_changed_by uuid, p_comment text)` → `reports` | Validates the target profile is `officer`/`admin` (`22023` otherwise), sets `assigned_to`, moves the report to `under_review`, and logs the assignment |
+
+Both raise `P0002` when the report does not exist, which the API maps to `404`.
+
+---
+
 ## 6. Storage Bucket
 
 **Bucket name:** `report-images`
@@ -134,24 +153,12 @@ Both are `SECURITY DEFINER` — they read profiles with elevated permission so R
 | Allowed MIME types | `image/jpeg`, `image/png`, `image/webp` |
 | Object path pattern | `{user_id}/{timestamp}-{random}.{ext}` |
 
-Storage RLS policies (apply after creating the bucket in Dashboard):
-
-```sql
--- Users upload to their own folder only
-create policy "storage_upload_own" on storage.objects for insert
-  with check (bucket_id = 'report-images' and auth.role() = 'authenticated'
-              and (storage.foldername(name))[1] = auth.uid()::text);
-
--- Owners and officers/admins can read
-create policy "storage_select_own_or_officer" on storage.objects for select
-  using (bucket_id = 'report-images'
-         and ((storage.foldername(name))[1] = auth.uid()::text or public.is_officer_or_admin()));
-
--- Owners can delete their own images
-create policy "storage_delete_own" on storage.objects for delete
-  using (bucket_id = 'report-images'
-         and (storage.foldername(name))[1] = auth.uid()::text);
-```
+The bucket and its three object policies (`storage_upload_own`,
+`storage_select_own_or_officer`, `storage_delete_own`) are created by
+migration `20261020000000_fix_history_guards_and_storage.sql`. That block is
+guarded by `to_regclass('storage.buckets')`, so it is skipped on a plain
+PostgreSQL instance. Creating the bucket manually in the Dashboard is no
+longer required.
 
 ---
 

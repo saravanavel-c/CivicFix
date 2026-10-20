@@ -1,20 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  PlusCircle, 
-  FileText, 
-  MapPin, 
-  Bell, 
-  User, 
-  HelpCircle, 
-  LogOut,
-  Users,
-  Sparkles,
-  Wrench,
-  Building2,
-  TrendingUp
-} from 'lucide-react';
+import { LayoutDashboard, PlusCircle, FileText, MapPin, Bell, User, HelpCircle, LogOut, Users, Wrench, TrendingUp } from 'lucide-react';
 import { notificationService } from '../services/notificationService';
 import { userService } from '../services/userService';
 

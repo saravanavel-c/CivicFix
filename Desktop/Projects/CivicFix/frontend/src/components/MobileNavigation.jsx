@@ -1,18 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Plus, 
-  FileText, 
-  Bell, 
-  User,
-  Users,
-  MapPin,
-  TrendingUp,
-  Wrench,
-  ShieldCheck,
-  Building2
-} from 'lucide-react';
+import { LayoutDashboard, Plus, FileText, Bell, User, Users, MapPin, TrendingUp, Wrench, ShieldCheck } from 'lucide-react';
 import { notificationService } from '../services/notificationService';
 import { userService } from '../services/userService';
 

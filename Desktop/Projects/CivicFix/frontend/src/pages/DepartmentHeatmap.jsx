@@ -1,16 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Map, 
-  MapPin, 
-  Filter, 
-  Layers, 
-  AlertTriangle, 
-  CheckCircle2, 
-  Clock, 
-  Users, 
-  Building2,
-  Info
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MapPin, Filter, Info } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
 import { LoadingState } from '../components/common/LoadingState';
 

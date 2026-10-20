@@ -1,12 +1,4 @@
-import React from 'react';
-import { 
-  FileText, 
-  CheckSquare, 
-  UserCheck, 
-  Play, 
-  CheckCircle2, 
-  XCircle 
-} from 'lucide-react';
+import { FileText, CheckSquare, UserCheck, Play, CheckCircle2, XCircle } from 'lucide-react';
 
 const statusConfig = {
   Submitted: {

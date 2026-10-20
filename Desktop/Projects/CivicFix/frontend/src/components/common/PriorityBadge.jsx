@@ -1,4 +1,3 @@
-import React from 'react';
 
 const priorityConfig = {
   High: 'bg-rose-50 text-rose-700 border-rose-200',

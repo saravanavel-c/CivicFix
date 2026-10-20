@@ -1,14 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  MapPin, 
-  Users, 
-  ThumbsUp, 
-  AlertCircle, 
-  Map,
-  X,
-  Sparkles,
-  Info
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MapPin, Users, ThumbsUp, Map, Sparkles, Info } from 'lucide-react';
 import { nearbyService } from '../services/nearbyService';
 import useGeolocation from '../hooks/useGeolocation';
 import { LoadingState } from '../components/common/LoadingState';
