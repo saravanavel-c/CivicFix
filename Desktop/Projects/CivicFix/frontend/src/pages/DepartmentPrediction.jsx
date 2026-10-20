@@ -1,14 +1,4 @@
-import React from 'react';
-import { 
-  TrendingUp, 
-  Sparkles, 
-  BarChart3, 
-  BrainCircuit, 
-  ShieldAlert, 
-  LineChart, 
-  Clock, 
-  Cpu
-} from 'lucide-react';
+import { Sparkles, BrainCircuit, ShieldAlert, LineChart, Cpu } from 'lucide-react';
 
 export const DepartmentPrediction = () => {
   return (

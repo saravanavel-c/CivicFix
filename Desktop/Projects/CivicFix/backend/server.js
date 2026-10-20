@@ -7,7 +7,12 @@ import { validateComplaint }          from './validation.js';
 import { findDuplicates }             from './duplicateDetection.js';
 import { computePriority }            from './prioritization.js';
 import { classifyComplaintWithImage, fetchImageAsBase64 } from './imageClassifier.js';
-import { supabaseAdmin }              from './config/supabase.js';
+import {
+  supabaseAdmin,
+  isSupabaseConfigured,
+  requireDatabase,
+  checkDatabase,
+} from './config/supabase.js';
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -24,7 +29,9 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (curl, mobile, same-origin)
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS: origin ${origin} not allowed`));
+    const corsError = new Error(`CORS: origin ${origin} not allowed`);
+    corsError.status = 403;
+    callback(corsError);
   },
   credentials: true,
 }));
@@ -48,21 +55,37 @@ async function authenticate(req, res, next) {
     return next();
   }
 
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) {
-    return res.status(401).json({ error: 'Invalid or expired token.' });
+  // A token cannot be verified without credentials — answer with an
+  // actionable error instead of failing against a placeholder host.
+  if (!isSupabaseConfigured) {
+    return res.status(503).json({
+      code: 'DB_NOT_CONFIGURED',
+      error: 'Authentication is unavailable: the backend has no Supabase credentials configured.',
+    });
   }
 
-  // Fetch the profile to get the role
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+  try {
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    if (error || !user) {
+      return res.status(401).json({ error: 'Invalid or expired token.' });
+    }
 
-  req.user    = user;
-  req.profile = profile || { id: user.id, role: 'citizen' };
-  next();
+    // Fetch the profile to get the role
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    req.user    = user;
+    req.profile = profile || { id: user.id, role: 'citizen' };
+    return next();
+  } catch (err) {
+    console.error('[CivicFix] Token verification failed:', err.message);
+    return res.status(401).json({
+      error: 'Could not verify the session token. Please sign in again.',
+    });
+  }
 }
 
 // Require a valid authenticated session
@@ -92,6 +115,32 @@ function paginate(query, page = 1, pageSize = 20) {
   const from = (p - 1) * size;
   const to   = from + size - 1;
   return query.range(from, to);
+}
+
+const UNIQUE_VIOLATION = '23505';
+
+/**
+ * Inserts a report, retrying when the randomly generated tracking_id
+ * collides with an existing row (unique violation on that column).
+ */
+async function insertReport(insertData, maxAttempts = 3) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const { data, error } = await supabaseAdmin
+      .from('reports')
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (!error) return { data, error: null };
+
+    lastError = error;
+    if (error.code !== UNIQUE_VIOLATION) break;
+    console.warn(`[CivicFix] tracking_id collision (attempt ${attempt}/${maxAttempts}), retrying.`);
+  }
+
+  return { data: null, error: lastError };
 }
 
 const VALID_STATUSES   = ['submitted','under_review','in_progress','resolved','rejected'];
@@ -141,7 +190,7 @@ app.post('/api/analyze-complaint', async (req, res) => {
     let complaintsForDupCheck = Array.isArray(existingComplaints) ? existingComplaints : [];
 
     // If connected to Supabase, fetch nearby reports from DB for more accurate dedup
-    if (supabaseAdmin && latitude && longitude) {
+    if (isSupabaseConfigured && latitude && longitude) {
       try {
         const lat  = parseFloat(latitude);
         const lng  = parseFloat(longitude);
@@ -228,7 +277,7 @@ app.post('/api/classify-image', async (req, res) => {
  * Body: { title, description, category, latitude, longitude, address?,
  *         image_path?, ai_category?, ai_confidence?, priority? }
  */
-app.post('/api/reports', requireAuth, async (req, res) => {
+app.post('/api/reports', requireAuth, requireDatabase, async (req, res) => {
   const {
     title, description, category, latitude, longitude,
     address, image_path, ai_category, ai_confidence, priority,
@@ -275,11 +324,7 @@ app.post('/api/reports', requireAuth, async (req, res) => {
     status:        'submitted',
   };
 
-  const { data, error } = await supabaseAdmin
-    .from('reports')
-    .insert(insertData)
-    .select()
-    .single();
+  const { data, error } = await insertReport(insertData);
 
   if (error) {
     console.error('Report insert failed:', error.message);
@@ -294,7 +339,7 @@ app.post('/api/reports', requireAuth, async (req, res) => {
  * List reports with optional filters. Public.
  * Query params: category, status, priority, page, pageSize
  */
-app.get('/api/reports', async (req, res) => {
+app.get('/api/reports', requireDatabase, async (req, res) => {
   const { category, status, priority, page, pageSize } = req.query;
 
   let query = supabaseAdmin
@@ -327,7 +372,7 @@ app.get('/api/reports', async (req, res) => {
  * GET /api/reports/mine
  * Returns all reports belonging to the authenticated user.
  */
-app.get('/api/reports/mine', requireAuth, async (req, res) => {
+app.get('/api/reports/mine', requireAuth, requireDatabase, async (req, res) => {
   const { page, pageSize } = req.query;
 
   let query = supabaseAdmin
@@ -352,7 +397,7 @@ app.get('/api/reports/mine', requireAuth, async (req, res) => {
  * Public tracking endpoint. Returns limited public fields only —
  * no private user data.
  */
-app.get('/api/reports/track/:trackingId', async (req, res) => {
+app.get('/api/reports/track/:trackingId', requireDatabase, async (req, res) => {
   const { trackingId } = req.params;
 
   if (!trackingId || !/^CIV-[A-Z0-9]{8}$/i.test(trackingId)) {
@@ -388,7 +433,7 @@ app.get('/api/reports/track/:trackingId', async (req, res) => {
  * Single report with full details. Public for basic fields;
  * assigned_to only exposed to officers/admins.
  */
-app.get('/api/reports/:id', async (req, res) => {
+app.get('/api/reports/:id', requireDatabase, async (req, res) => {
   const { id } = req.params;
 
   const isOfficer = req.profile && ['officer','admin'].includes(req.profile.role);
@@ -419,7 +464,7 @@ app.get('/api/reports/:id', async (req, res) => {
  * GET /api/reports/:id/history
  * Status history for a report. Public.
  */
-app.get('/api/reports/:id/history', async (req, res) => {
+app.get('/api/reports/:id/history', requireDatabase, async (req, res) => {
   const { id } = req.params;
 
   const { data, error } = await supabaseAdmin
@@ -440,101 +485,69 @@ app.get('/api/reports/:id/history', async (req, res) => {
  * Change report status. Officers and admins only.
  * Body: { status, comment? }
  */
-app.patch('/api/reports/:id/status', requireOfficer, async (req, res) => {
-  const { id }               = req.params;
-  const { status, comment }  = req.body;
+app.patch('/api/reports/:id/status', requireOfficer, requireDatabase, async (req, res) => {
+  const { id }              = req.params;
+  const { status, comment } = req.body;
 
-  if (!status || !VALID_STATUSES.includes(status.toLowerCase())) {
+  if (!status || !VALID_STATUSES.includes(String(status).toLowerCase())) {
     return res.status(400).json({
       error: `status must be one of: ${VALID_STATUSES.join(', ')}.`,
     });
   }
 
-  // Fetch current status to record old value in history
-  const { data: current, error: fetchErr } = await supabaseAdmin
-    .from('reports')
-    .select('id, status')
-    .eq('id', id)
-    .single();
+  // Single atomic call: the RPC updates the row and the
+  // on_report_status_change trigger writes the audit entry
+  // (old/new status, actor, comment) — no duplicate rows.
+  const { data: updated, error } = await supabaseAdmin.rpc('transition_report_status', {
+    p_report_id:  id,
+    p_new_status: String(status).toLowerCase(),
+    p_comment:    comment?.trim() || null,
+    p_changed_by: req.user.id,
+  });
 
-  if (fetchErr || !current) {
-    return res.status(404).json({ error: 'Report not found.' });
-  }
-
-  const newStatus = status.toLowerCase();
-
-  // Update report status
-  const updatePayload = { status: newStatus };
-  if (newStatus === 'resolved') updatePayload.resolved_at = new Date().toISOString();
-
-  const { data: updated, error: updateErr } = await supabaseAdmin
-    .from('reports')
-    .update(updatePayload)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (updateErr) {
-    console.error('Status update failed:', updateErr.message);
+  if (error) {
+    if (error.code === 'P0002') {
+      return res.status(404).json({ error: 'Report not found.' });
+    }
+    console.error('Status update failed:', error.message);
     return res.status(500).json({ error: 'Failed to update report status.' });
   }
-
-  // Record in status history (trigger also does this, but explicit insert
-  // lets us attach the comment and changed_by correctly)
-  await supabaseAdmin.from('report_status_history').insert({
-    report_id:  id,
-    old_status: current.status,
-    new_status: newStatus,
-    changed_by: req.user.id,
-    comment:    comment?.trim() || null,
-  });
 
   return res.json({ report: updated });
 });
 
 /**
  * PATCH /api/reports/:id/assign
- * Assign a report to an officer. Admins only.
- * Body: { officer_id }
+ * Assign a report to an officer or admin. Officers and admins only.
+ * Body: { officer_id, comment? }
  */
-app.patch('/api/reports/:id/assign', requireOfficer, async (req, res) => {
-  const { id }          = req.params;
-  const { officer_id }  = req.body;
+app.patch('/api/reports/:id/assign', requireOfficer, requireDatabase, async (req, res) => {
+  const { id }         = req.params;
+  const { officer_id } = req.body;
 
   if (!officer_id) {
     return res.status(400).json({ error: 'officer_id is required.' });
   }
 
-  // Verify the target profile exists and is an officer/admin
-  const { data: target } = await supabaseAdmin
-    .from('profiles')
-    .select('id, role')
-    .eq('id', officer_id)
-    .single();
-
-  if (!target || !['officer','admin'].includes(target.role)) {
-    return res.status(400).json({ error: 'Target user is not a valid officer or admin.' });
-  }
-
-  const { data: updated, error } = await supabaseAdmin
-    .from('reports')
-    .update({ assigned_to: officer_id, status: 'under_review' })
-    .eq('id', id)
-    .select()
-    .single();
+  // The RPC validates the target role, moves the report to under_review and
+  // writes the audit entry in one transaction.
+  const { data: updated, error } = await supabaseAdmin.rpc('assign_report', {
+    p_report_id:  id,
+    p_officer_id: officer_id,
+    p_changed_by: req.user.id,
+    p_comment:    req.body.comment?.trim() || null,
+  });
 
   if (error) {
+    if (error.code === 'P0002') {
+      return res.status(404).json({ error: 'Report not found.' });
+    }
+    if (error.code === '22023') {
+      return res.status(400).json({ error: error.message });
+    }
+    console.error('Assignment failed:', error.message);
     return res.status(500).json({ error: 'Failed to assign report.' });
   }
-
-  // Log the assignment in history
-  await supabaseAdmin.from('report_status_history').insert({
-    report_id:  id,
-    old_status: 'submitted',
-    new_status: 'under_review',
-    changed_by: req.user.id,
-    comment:    `Assigned to officer ${officer_id}`,
-  });
 
   return res.json({ report: updated });
 });
@@ -542,16 +555,45 @@ app.patch('/api/reports/:id/assign', requireOfficer, async (req, res) => {
 // ---------------------------------------------------------------
 // Health check
 // ---------------------------------------------------------------
-app.get('/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/health', async (_req, res) => {
+  const db = await checkDatabase();
+
+  return res.json({
+    status:    db.state === 'unreachable' ? 'degraded' : 'ok',
+    timestamp: new Date().toISOString(),
+    database:  db.state,
+    ...(db.message ? { databaseError: db.message } : {}),
+  });
+});
+
+// ---------------------------------------------------------------
+// Unknown API route
+// ---------------------------------------------------------------
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'API route not found.' });
+});
 
 // ---------------------------------------------------------------
 // Global error handler
 // ---------------------------------------------------------------
 app.use((err, _req, res, _next) => {
   console.error('[CivicFix] Unhandled error:', err.message);
-  res.status(500).json({ error: 'An unexpected error occurred.' });
+  if (res.headersSent) return;
+  const status = err.status || 500;
+  res.status(status).json({
+    error: status === 500 ? 'An unexpected error occurred.' : err.message,
+  });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`CivicFix backend listening on http://localhost:${PORT}`);
+
+  const db = await checkDatabase();
+  if (db.state === 'connected') {
+    console.log('[CivicFix] Supabase connection OK.');
+  } else if (db.state === 'not_configured') {
+    console.warn('[CivicFix] Supabase is NOT configured — database routes will answer 503.');
+  } else {
+    console.error(`[CivicFix] Supabase is unreachable: ${db.message}`);
+  }
 });

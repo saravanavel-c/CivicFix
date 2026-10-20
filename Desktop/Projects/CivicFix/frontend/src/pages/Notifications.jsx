@@ -1,17 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Bell, 
-  Check, 
-  CheckSquare, 
-  Info, 
-  AlertTriangle, 
-  PlayCircle,
-  Eye,
-  Trash2,
-  CheckCircle2,
-  Sparkles
-} from 'lucide-react';
+import { Bell, Check, Info, AlertTriangle, PlayCircle, Eye, CheckCircle2 } from 'lucide-react';
 import { notificationService } from '../services/notificationService';
 import { LoadingState } from '../components/common/LoadingState';
 import { EmptyState } from '../components/common/EmptyState';

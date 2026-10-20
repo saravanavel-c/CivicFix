@@ -1,4 +1,3 @@
-import React from 'react';
 
 export const LoadingState = ({ type = 'spinner', count = 3, className = '' }) => {
   if (type === 'skeleton') {

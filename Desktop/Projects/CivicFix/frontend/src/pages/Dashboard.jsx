@@ -1,15 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  PlusCircle, 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle, 
-  TrendingUp, 
-  ArrowRight,
-  Sparkles
-} from 'lucide-react';
+import { PlusCircle, FileText, Clock, CheckCircle, TrendingUp, ArrowRight, Sparkles } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
 import { StatCard } from '../components/common/StatCard';
 import { ComplaintCard } from '../components/common/ComplaintCard';

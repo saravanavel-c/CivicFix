@@ -1,22 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Calendar, 
-  AlertCircle, 
-  Users, 
-  UserPlus, 
-  CheckCircle2, 
-  Clock, 
-  Wrench, 
-  Image as ImageIcon, 
-  Check, 
-  X, 
-  Building,
-  Phone,
-  MessageSquare
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, MapPin, Calendar, AlertCircle, Users, UserPlus, Check, X, Phone, MessageSquare } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
 import { userService } from '../services/userService';
 import { Button } from '../components/common/Button';

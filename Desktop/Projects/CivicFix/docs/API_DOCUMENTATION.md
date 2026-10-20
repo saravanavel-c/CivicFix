@@ -227,10 +227,12 @@ Assign report to an officer. **Requires officer or admin role.**
 
 **Request body:**
 ```json
-{ "officer_id": "uuid-of-officer" }
+{ "officer_id": "uuid-of-officer", "comment": "Optional note for the audit trail" }
 ```
 
 **Response:** `{ "report": { ...updatedReport } }`
+
+**Errors:** `400` target is not an officer/admin · `404` report not found
 
 ---
 
@@ -239,7 +241,18 @@ Assign report to an officer. **Requires officer or admin role.**
 ### `GET /health`
 No auth required.
 
-**Response:** `{ "status": "ok", "timestamp": "2026-10-19T10:30:00.000Z" }`
+**Response:**
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-10-19T10:30:00.000Z",
+  "database": "connected"
+}
+```
+
+`database` is one of `connected`, `not_configured` or `unreachable`. When it is
+`unreachable` the response also carries `databaseError` and `status` becomes
+`degraded`.
 
 ---
 
@@ -279,4 +292,4 @@ All error responses follow:
 | 404 | Resource not found |
 | 500 | Server error |
 | 502 | External AI service unavailable |
-| 503 | Feature unavailable (missing API key) |
+| 503 | Feature unavailable — missing API key, or `code: "DB_NOT_CONFIGURED"` when `backend/.env` has no Supabase credentials |

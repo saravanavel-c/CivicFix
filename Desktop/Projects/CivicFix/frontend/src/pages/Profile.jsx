@@ -1,17 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { 
-  User, 
-  Shield, 
-  HelpCircle, 
-  Save, 
-  Lock, 
-  PhoneCall,
-  MessageSquare,
-  ChevronDown,
-  Building,
-  Key
-} from 'lucide-react';
+import { User, Shield, HelpCircle, Save, Lock, PhoneCall, MessageSquare, ChevronDown, Key } from 'lucide-react';
 import { userService } from '../services/userService';
 import { LoadingState } from '../components/common/LoadingState';
 import { Button } from '../components/common/Button';

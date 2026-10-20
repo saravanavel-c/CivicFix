@@ -7,12 +7,15 @@ export function useGeolocation(userOptions = {}) {
   const watchIdRef = useRef(null);
   const [watching, setWatching] = useState(false);
 
+  // Options are compared by value so a fresh object literal from the caller
+  // does not invalidate the memo on every render.
+  const optionsKey = JSON.stringify(userOptions);
   const options = useMemo(() => ({
     enableHighAccuracy: true,
     maximumAge: 0,
     timeout: 15000,
-    ...userOptions
-  }), [JSON.stringify(userOptions)]);
+    ...JSON.parse(optionsKey)
+  }), [optionsKey]);
 
   // initialize from persisted last-known location if available
   useEffect(() => {
@@ -24,7 +27,7 @@ export function useGeolocation(userOptions = {}) {
           setPosition({ lat: String(parsed.lat), lng: String(parsed.lng) });
         }
       }
-    } catch (err) {
+    } catch {
       // ignore
     }
   }, []);
@@ -36,14 +39,10 @@ export function useGeolocation(userOptions = {}) {
     // persist last known location
     try {
       localStorage.setItem('CivicFix_last_location', JSON.stringify({ lat: p.lat, lng: p.lng }));
-    } catch (err) {
+    } catch {
       // ignore storage errors
     }
     setError(null);
-  }, []);
-
-  const handleError = useCallback((err) => {
-    setError(err);
   }, []);
 
   const getCurrent = useCallback(() => {
