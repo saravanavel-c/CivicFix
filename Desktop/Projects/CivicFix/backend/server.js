@@ -154,7 +154,8 @@ const VALID_PRIORITIES = ['low','medium','high','urgent'];
 
 /**
  * POST /api/classify
- * Keyword-based text classification. Returns { category }.
+ * Text classification: Groq LLM first, offline keyword classifier as fallback.
+ * Returns { category, source } where source is 'groq' or 'keyword'.
  */
 app.post('/api/classify', async (req, res) => {
   const { description } = req.body;
@@ -162,11 +163,11 @@ app.post('/api/classify', async (req, res) => {
     return res.status(400).json({ error: 'A non-empty "description" string is required.' });
   }
   try {
-    const category = await classifyComplaint(description);
-    return res.json({ category });
+    const { category, source } = await classifyComplaint(description);
+    return res.json({ category, source });
   } catch (err) {
     console.error('Classification failed:', err.message);
-    return res.status(502).json({ error: 'Classification service unavailable.' });
+    return res.status(500).json({ error: 'Classification failed.' });
   }
 });
 

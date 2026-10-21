@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Users, Building2, Wrench, UserCheck, UserPlus, Edit3, Trash2, X, Search, ShieldAlert, Mail, Phone, Building } from 'lucide-react';
 import { userService } from '../services/userService';
 import { Button } from '../components/common/Button';
@@ -41,8 +41,7 @@ export const AdminDashboard = () => {
     'Drainage'
   ];
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = useCallback(async () => {
     try {
       const s = await userService.getAdminStats();
       setStats(s);
@@ -53,11 +52,19 @@ export const AdminDashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeTab]);
 
   useEffect(() => {
-    loadData();
-  }, [activeTab]);
+    (async () => {
+      await loadData();
+    })();
+  }, [loadData]);
+
+  const handleTabChange = (tab) => {
+    if (tab === activeTab) return;
+    setIsLoading(true);
+    setActiveTab(tab);
+  };
 
   const handleOpenAddModal = () => {
     const prefix = addRoleType === 'Worker' ? 'WRK' : 'USR-D';
@@ -82,6 +89,7 @@ export const AdminDashboard = () => {
       setToastType('success');
       setToastMessage(`${addRoleType} created successfully.`);
       setIsAddModalOpen(false);
+      setIsLoading(true);
       loadData();
     } catch (err) {
       console.error(err);
@@ -101,6 +109,7 @@ export const AdminDashboard = () => {
       setToastType('success');
       setToastMessage('User details updated successfully.');
       setEditingUser(null);
+      setIsLoading(true);
       loadData();
     } catch (err) {
       console.error(err);
@@ -116,6 +125,7 @@ export const AdminDashboard = () => {
       setToastType('success');
       setToastMessage(`User ${deletingUser.name} deleted successfully.`);
       setDeletingUser(null);
+      setIsLoading(true);
       loadData();
     } catch (err) {
       console.error(err);
@@ -205,7 +215,7 @@ export const AdminDashboard = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
             <button
-              onClick={() => setActiveTab('department')}
+              onClick={() => handleTabChange('department')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === 'department'
                   ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10'
@@ -220,7 +230,7 @@ export const AdminDashboard = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('worker')}
+              onClick={() => handleTabChange('worker')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === 'worker'
                   ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10'
@@ -235,7 +245,7 @@ export const AdminDashboard = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('citizen')}
+              onClick={() => handleTabChange('citizen')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === 'citizen'
                   ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10'

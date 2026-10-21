@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Calendar, AlertCircle, Users, UserPlus, Check, X, Phone, MessageSquare } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
@@ -14,6 +14,11 @@ export const DepartmentComplaintDetails = () => {
   const [complaint, setComplaint] = useState(null);
   const [availableWorkers, setAvailableWorkers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadedId, setLoadedId] = useState(id);
+  if (loadedId !== id) {
+    setLoadedId(id);
+    setIsLoading(true);
+  }
 
   // Assign worker modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -22,8 +27,7 @@ export const DepartmentComplaintDetails = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = useCallback(async () => {
     try {
       const c = await complaintService.getComplaintById(id);
       setComplaint(c);
@@ -39,11 +43,13 @@ export const DepartmentComplaintDetails = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
-    loadData();
-  }, [id]);
+    (async () => {
+      await loadData();
+    })();
+  }, [loadData]);
 
   const handleToggleWorker = (wId) => {
     if (selectedWorkerIds.includes(wId)) {
@@ -59,6 +65,7 @@ export const DepartmentComplaintDetails = () => {
       setToastType('success');
       setToastMessage('Workers assigned successfully to complaint.');
       setIsAssignModalOpen(false);
+      setIsLoading(true);
       loadData();
     } catch (err) {
       console.error(err);

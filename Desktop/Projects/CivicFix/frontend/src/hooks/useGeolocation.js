@@ -2,7 +2,21 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 
 // Lightweight hook to access browser Geolocation and optionally watch position updates.
 export function useGeolocation(userOptions = {}) {
-  const [position, setPosition] = useState(null);
+  // initialize from persisted last-known location if available
+  const [position, setPosition] = useState(() => {
+    try {
+      const raw = localStorage.getItem('CivicFix_last_location');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.lat && parsed.lng) {
+          return { lat: String(parsed.lat), lng: String(parsed.lng) };
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  });
   const [error, setError] = useState(null);
   const watchIdRef = useRef(null);
   const [watching, setWatching] = useState(false);
@@ -16,21 +30,6 @@ export function useGeolocation(userOptions = {}) {
     timeout: 15000,
     ...JSON.parse(optionsKey)
   }), [optionsKey]);
-
-  // initialize from persisted last-known location if available
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('CivicFix_last_location');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && parsed.lat && parsed.lng) {
-          setPosition({ lat: String(parsed.lat), lng: String(parsed.lng) });
-        }
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
 
   const handleSuccess = useCallback((pos) => {
     const { latitude, longitude } = pos.coords;

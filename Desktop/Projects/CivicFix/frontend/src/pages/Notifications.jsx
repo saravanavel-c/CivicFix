@@ -33,7 +33,6 @@ export const Notifications = () => {
   const navigate = useNavigate();
 
   const loadNotifications = async () => {
-    setIsLoading(true);
     try {
       const data = await notificationService.getNotifications();
       setNotifications(data);
@@ -45,7 +44,9 @@ export const Notifications = () => {
   };
 
   useEffect(() => {
-    loadNotifications();
+    (async () => {
+      await loadNotifications();
+    })();
   }, []);
 
   const handleMarkRead = async (id) => {

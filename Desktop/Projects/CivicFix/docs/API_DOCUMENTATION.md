@@ -25,7 +25,7 @@ fetch('/api/reports', { headers: { 'Authorization': `Bearer ${token}` } });
 ## AI Routes
 
 ### `POST /api/classify`
-Keyword-based text classification. No auth required.
+Text classification. Uses the Groq LLM when available and falls back to an offline keyword classifier if Groq is missing, unreachable, rate-limited or returns an unusable answer. No auth required.
 
 **Request body:**
 ```json
@@ -34,11 +34,12 @@ Keyword-based text classification. No auth required.
 
 **Response:**
 ```json
-{ "category": "road" }
+{ "category": "Road", "source": "groq" }
 ```
+`category` is one of `Road`, `Sanitation`, `Drainage`, `Water`, `Electricity`, `Other`. `source` is `"groq"` or `"keyword"` (the fallback).
 
 **Error (400):** `{ "error": "A non-empty \"description\" string is required." }`  
-**Error (502):** `{ "error": "Classification service unavailable." }` — falls back to "Other" on frontend.
+**Error (500):** `{ "error": "Classification failed." }` — unexpected failure only; the frontend falls back to "Other".
 
 ---
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Calendar, Building, Star, AlertCircle, CheckCircle } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
@@ -12,6 +12,11 @@ export const ComplaintDetail = () => {
   const { id } = useParams();
   const [complaint, setComplaint] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadedId, setLoadedId] = useState(id);
+  if (loadedId !== id) {
+    setLoadedId(id);
+    setIsLoading(true);
+  }
   
   // Feedback Form State
   const [rating, setRating] = useState(5);
@@ -22,8 +27,7 @@ export const ComplaintDetail = () => {
 
   const navigate = useNavigate();
 
-  const loadComplaintDetails = async () => {
-    setIsLoading(true);
+  const loadComplaintDetails = useCallback(async () => {
     try {
       const details = await complaintService.getComplaintById(id);
       setComplaint(details);
@@ -32,11 +36,13 @@ export const ComplaintDetail = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
-    loadComplaintDetails();
-  }, [id]);
+    (async () => {
+      await loadComplaintDetails();
+    })();
+  }, [loadComplaintDetails]);
 
   const handleFeedbackSubmit = async (e) => {
     e.preventDefault();

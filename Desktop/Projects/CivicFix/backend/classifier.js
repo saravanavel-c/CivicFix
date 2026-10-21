@@ -1,8 +1,8 @@
+import { classifyByKeywords, VALID_CATEGORIES } from './keywordClassifier.js';
+
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = 'openai/gpt-oss-20b'; // fast + cheap, plenty for single-label classification
-
-// Must match the categories used across the frontend (ReportIssue.jsx, mockData.js)
-const VALID_CATEGORIES = ['Road', 'Sanitation', 'Drainage', 'Water', 'Electricity', 'Other'];
+const GROQ_TIMEOUT_MS = 8000; // fail fast so the keyword fallback can answer quickly
 
 const SYSTEM_PROMPT = `You are a strict text classifier for a civic issue reporting app.
 Classify the citizen's complaint into exactly ONE of these categories:
@@ -18,10 +18,8 @@ Guidelines:
 
 Respond with ONLY the single category word from the list above. No punctuation, no explanation.`;
 
-export async function classifyComplaint(description) {
+async function classifyWithGroq(description) {
   const apiKey = process.env.GROQ_API_KEY;
-  console.log("GROQ KEY LOADED:", !!apiKey);
-  console.log("GROQ MODEL:", GROQ_MODEL);
   if (!apiKey) {
     throw new Error('GROQ_API_KEY is not set in the environment.');
   }
@@ -42,6 +40,7 @@ export async function classifyComplaint(description) {
       max_tokens: 50,
       reasoning_effort: 'low',
     }),
+    signal: AbortSignal.timeout(GROQ_TIMEOUT_MS),
   });
 
   if (!response.ok) {
@@ -50,21 +49,27 @@ export async function classifyComplaint(description) {
   }
 
   const data = await response.json();
-  console.log("GROQ RESPONSE:", JSON.stringify(data, null, 2));
-
   const raw = data?.choices?.[0]?.message?.content?.trim() || '';
+  const cleaned = raw.replace(/[^a-zA-Z]/g, '').toLowerCase();
 
-  console.log("GROQ RAW:", JSON.stringify(raw));
+  const match = VALID_CATEGORIES.find((cat) => cat.toLowerCase() === cleaned);
+  if (!match) {
+    throw new Error(`Groq returned an unrecognised category: ${JSON.stringify(raw)}`);
+  }
+  return match;
+}
 
-  const cleaned = raw.replace(/[^a-zA-Z]/g, '');
-
-  console.log("CLEANED:", JSON.stringify(cleaned));
-
-  const match = VALID_CATEGORIES.find(
-    (cat) => cat.toLowerCase() === cleaned.toLowerCase()
-  );
-
-  console.log("FINAL CATEGORY:", match || "Other");
-
-  return match || 'Other';
+/**
+ * Classifies a complaint description. Tries the Groq LLM first and falls back to
+ * the offline keyword classifier if Groq is unavailable or returns something unusable.
+ * Returns { category, source } where source is 'groq' or 'keyword'.
+ */
+export async function classifyComplaint(description) {
+  try {
+    const category = await classifyWithGroq(description);
+    return { category, source: 'groq' };
+  } catch (err) {
+    console.warn(`Groq classification unavailable, using keyword fallback: ${err.message}`);
+    return { category: classifyByKeywords(description), source: 'keyword' };
+  }
 }

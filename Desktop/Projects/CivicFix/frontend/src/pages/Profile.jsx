@@ -37,7 +37,6 @@ export const Profile = () => {
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
   const loadProfileData = async () => {
-    setIsLoading(true);
     try {
       const u = await userService.getUserProfile();
       setProfile(u);
@@ -56,7 +55,9 @@ export const Profile = () => {
   };
 
   useEffect(() => {
-    loadProfileData();
+    (async () => {
+      await loadProfileData();
+    })();
   }, []);
 
   const handleProfileSave = async (e) => {

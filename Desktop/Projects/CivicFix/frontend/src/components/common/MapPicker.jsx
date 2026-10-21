@@ -72,9 +72,12 @@ export const MapPicker = ({ lat, lng, zoom = 16, onChange }) => {
   const [markerPos, setMarkerPos] = useState(defaultPos);
   const [map, setMap] = useState(null);
 
-  useEffect(() => {
+  // Keep the marker in sync with the lat/lng props (adjusting state while rendering, no effect needed)
+  const [syncedCoords, setSyncedCoords] = useState({ lat, lng });
+  if (syncedCoords.lat !== lat || syncedCoords.lng !== lng) {
+    setSyncedCoords({ lat, lng });
     if (lat && lng) setMarkerPos([Number(lat), Number(lng)]);
-  }, [lat, lng]);
+  }
 
   const handleDragEnd = (e) => {
     const marker = e.target;

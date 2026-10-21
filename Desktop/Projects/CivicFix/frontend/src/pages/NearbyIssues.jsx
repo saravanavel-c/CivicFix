@@ -22,7 +22,6 @@ export const NearbyIssues = () => {
   const [toastType, setToastType] = useState('success');
 
   const loadNearby = async () => {
-    setIsLoading(true);
     try {
       const list = await nearbyService.getNearbyIssues();
       setIssues(list);
@@ -38,7 +37,9 @@ export const NearbyIssues = () => {
   };
 
   useEffect(() => {
-    loadNearby();
+    (async () => {
+      await loadNearby();
+    })();
   }, []);
 
   const { position, getCurrent, startWatching, stopWatching, watching } = useGeolocation();
@@ -48,7 +49,7 @@ export const NearbyIssues = () => {
     getCurrent();
     startWatching();
     return () => stopWatching();
-  }, []);
+  }, [getCurrent, startWatching, stopWatching]);
 
   const handleUpvote = async (id) => {
     try {

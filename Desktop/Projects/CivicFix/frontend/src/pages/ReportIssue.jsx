@@ -79,7 +79,7 @@ export const ReportIssue = () => {
       if (!res.ok) return null;
       const data = await res.json();
       return data.display_name || null;
-    } catch (err) {
+    } catch {
       return null;
     }
   };
@@ -101,11 +101,17 @@ export const ReportIssue = () => {
     }
   };
 
-  // Apply position updates to local form state and reverse-geocode to a readable address
+  // Apply position updates to local form state (adjusting state while rendering, no effect needed)
+  const [appliedPosition, setAppliedPosition] = useState(null);
+  if (position && position !== appliedPosition) {
+    setAppliedPosition(position);
+    setCoordinates({ lat: position.lat, lng: position.lng });
+  }
+
+  // Reverse-geocode the position to a readable address
   useEffect(() => {
     let mounted = true;
-    if (position && mounted) {
-      setCoordinates({ lat: position.lat, lng: position.lng });
+    if (position) {
       // try to reverse geocode, fallback to simple lat/lng label
       (async () => {
         const name = await reverseGeocode(position.lat, position.lng);

@@ -16,7 +16,6 @@ export const DepartmentDashboard = () => {
   const navigate = useNavigate();
 
   const loadDeptData = async () => {
-    setIsLoading(true);
     try {
       const user = await userService.getUserProfile();
       const dept = user?.department || 'Road Maintenance';
@@ -35,7 +34,9 @@ export const DepartmentDashboard = () => {
   };
 
   useEffect(() => {
-    loadDeptData();
+    (async () => {
+      await loadDeptData();
+    })();
   }, []);
 
   const filteredComplaints = complaints.filter(c => {

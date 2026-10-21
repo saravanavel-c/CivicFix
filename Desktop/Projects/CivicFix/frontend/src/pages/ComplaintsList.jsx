@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, AlertCircle, Plus } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
@@ -9,7 +9,6 @@ import { Button } from '../components/common/Button';
 
 export const ComplaintsList = () => {
   const [complaints, setComplaints] = useState([]);
-  const [filteredComplaints, setFilteredComplaints] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // Search & Filter state
@@ -23,11 +22,9 @@ export const ComplaintsList = () => {
   const navigate = useNavigate();
 
   const loadComplaints = async () => {
-    setIsLoading(true);
     try {
       const list = await complaintService.getMyComplaints();
       setComplaints(list);
-      setFilteredComplaints(list);
     } catch (err) {
       console.error("Failed to load complaints list:", err);
     } finally {
@@ -36,11 +33,13 @@ export const ComplaintsList = () => {
   };
 
   useEffect(() => {
-    loadComplaints();
+    (async () => {
+      await loadComplaints();
+    })();
   }, []);
 
-  // Filter and Search logic
-  useEffect(() => {
+  // Filter and Search logic (derived from state, so no effect is needed)
+  const filteredComplaints = useMemo(() => {
     let result = [...complaints];
 
     // Filter by Search Query (ID or Description)
@@ -74,7 +73,7 @@ export const ComplaintsList = () => {
       result.sort((a, b) => a.id.localeCompare(b.id));
     }
 
-    setFilteredComplaints(result);
+    return result;
   }, [searchQuery, selectedStatus, selectedCategory, selectedPriority, sortBy, complaints]);
 
   const resetFilters = () => {

@@ -23,7 +23,6 @@ export const WorkerDashboard = () => {
   const [toastType, setToastType] = useState('success');
 
   const loadWorkerData = async () => {
-    setIsLoading(true);
     try {
       const u = await userService.getUserProfile();
       setWorkerProfile(u);
@@ -44,7 +43,9 @@ export const WorkerDashboard = () => {
   };
 
   useEffect(() => {
-    loadWorkerData();
+    (async () => {
+      await loadWorkerData();
+    })();
   }, []);
 
   const handleSelectChange = async (e) => {
@@ -77,6 +78,7 @@ export const WorkerDashboard = () => {
       setRemarks('');
       
       // Reload list to update status & pending count
+      setIsLoading(true);
       loadWorkerData();
     } catch (err) {
       console.error(err);

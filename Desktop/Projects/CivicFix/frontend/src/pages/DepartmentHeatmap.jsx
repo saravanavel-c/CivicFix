@@ -33,7 +33,6 @@ export const DepartmentHeatmap = () => {
   ];
 
   const loadData = async () => {
-    setIsLoading(true);
     try {
       const list = await complaintService.getDepartmentComplaints('Road Maintenance');
       setComplaints(list);
@@ -48,7 +47,9 @@ export const DepartmentHeatmap = () => {
   };
 
   useEffect(() => {
-    loadData();
+    (async () => {
+      await loadData();
+    })();
   }, []);
 
   const filteredComplaints = complaints.filter(c => {
