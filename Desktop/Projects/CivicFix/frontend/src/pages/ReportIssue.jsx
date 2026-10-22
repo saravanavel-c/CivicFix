@@ -249,6 +249,10 @@ export const ReportIssue = () => {
       setStep(6); // Confirmation screen
     } catch (err) {
       console.error("Failed to submit complaint:", err);
+      setFormErrors((prev) => ({
+        ...prev,
+        submit: err?.message || 'Could not submit your complaint. Please try again.',
+      }));
     } finally {
       setIsSubmitting(false);
     }

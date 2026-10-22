@@ -23,11 +23,11 @@ export async function uploadReportImage(file, userId) {
   if (!file) return null;
 
   if (file.size > MAX_FILE_BYTES) {
-    throw new Error('Image must be 5 MB or smaller.');
+    throw Object.assign(new Error('Image must be 5 MB or smaller.'), { code: 'INVALID_FILE' });
   }
   const allowed = ['image/jpeg', 'image/png', 'image/webp'];
   if (!allowed.includes(file.type)) {
-    throw new Error('Only JPEG, PNG and WebP images are accepted.');
+    throw Object.assign(new Error('Only JPEG, PNG and WebP images are accepted.'), { code: 'INVALID_FILE' });
   }
 
   // Build a safe, non-guessable path:  {userId}/{timestamp}-{randomHex}.{ext}
@@ -39,7 +39,7 @@ export async function uploadReportImage(file, userId) {
     .from(BUCKET)
     .upload(objPath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
 
-  if (error) throw new Error(`Image upload failed: ${error.message}`);
+  if (error) throw Object.assign(new Error(`Image upload failed: ${error.message}`), { code: 'UPLOAD_FAILED' });
 
   return objPath;   // store this path in reports.image_path
 }
@@ -215,11 +215,14 @@ export const complaintService = {
   async createComplaint(data) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw Object.assign(new Error('Please log in to submit a report.'), { code: 'AUTH_REQUIRED' });
+      }
 
       // Upload image file if provided (File object)
       let imagePath = null;
       if (data.imageFile instanceof File) {
-        imagePath = await uploadReportImage(data.imageFile, user?.id || 'anonymous');
+        imagePath = await uploadReportImage(data.imageFile, user.id);
       } else if (data.image && !data.image.startsWith('blob:') && !data.image.startsWith('data:')) {
         // Already a URL (preset mock image) — store as-is for demo
         imagePath = data.image;
@@ -265,6 +268,11 @@ export const complaintService = {
 
       return norm;
     } catch (err) {
+      // Fall back to local demo storage ONLY when the backend is unreachable (network error)
+      // or the database is not configured (503). Auth, validation, upload and other server
+      // errors must reach the user; otherwise the UI shows success for a report that was never saved.
+      const canFallBack = !err.code && (err.status === undefined || err.status === 503);
+      if (!canFallBack) throw err;
       console.error('[complaintService] createComplaint failed, falling back to localStorage:', err.message);
 
       // Graceful offline fallback — preserve original localStorage behaviour

@@ -2,12 +2,27 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { PlusCircle, FileText, Clock, CheckCircle, TrendingUp, ArrowRight, Sparkles } from 'lucide-react';
 import { complaintService } from '../services/complaintService';
+import { getCurrentUser, getUserProfile } from '../lib/supabaseClient';
 import { StatCard } from '../components/common/StatCard';
 import { ComplaintCard } from '../components/common/ComplaintCard';
 import { LoadingState } from '../components/common/LoadingState';
 import { Button } from '../components/common/Button';
 
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+};
+
+// The signed-up name, or '' when it is missing or still the default placeholder
+const getDisplayName = (fullName) => {
+  const name = (fullName || '').trim().replace(/\s+/g, ' ');
+  return name.toLowerCase() === 'citizen' ? '' : name;
+};
+
 export const Dashboard = () => {
+  const [userName, setUserName] = useState('');
   const [stats, setStats] = useState(null);
   const [recentComplaints, setRecentComplaints] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -17,6 +32,14 @@ export const Dashboard = () => {
     const loadDashboardData = async () => {
       try {
         setIsLoading(true);
+        // Load the logged-in user's own name for the greeting (never a demo/mock name)
+        try {
+          const user = await getCurrentUser();
+          const profile = user ? await getUserProfile(user.id) : null;
+          setUserName(getDisplayName(profile?.full_name || user?.user_metadata?.full_name));
+        } catch {
+          setUserName('');
+        }
         // Load stats
         const s = await complaintService.getDashboardStats();
         setStats(s);
@@ -45,7 +68,7 @@ export const Dashboard = () => {
         
         <div className="space-y-1.5">
           <h1 className="text-2xl md:text-3xl font-bold font-display text-slate-800 tracking-tight">
-            Good morning, Saravana 👋
+            {getGreeting()}{userName ? `, ${userName}` : ''} 👋
           </h1>
           <p className="text-sm text-slate-500 max-w-md">
             Help make your community better by reporting local infrastructure and sanitation issues.
