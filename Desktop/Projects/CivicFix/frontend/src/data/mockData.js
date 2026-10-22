@@ -39,7 +39,7 @@ export const mockNotifications = [
   {
     id: "notif-3",
     complaintId: "CIV-1007",
-    title: "Complaint Resolved ≡ƒÄë",
+    title: "Complaint Resolved 🎉",
     message: "Your complaint CIV-1007 (Streetlight Broken) has been resolved. Please review and provide feedback.",
     type: "success",
     timestamp: "3 days ago",

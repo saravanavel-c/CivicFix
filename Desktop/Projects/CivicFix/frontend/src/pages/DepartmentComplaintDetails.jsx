@@ -112,7 +112,7 @@ export const DepartmentComplaintDetails = () => {
       </div>
 
       {/* =========================================================================
-          SECTION 1 ΓÇö COMPLAINT INFORMATION
+          SECTION 1 — COMPLAINT INFORMATION
          ========================================================================= */}
       <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-6">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b border-slate-100 pb-5">
@@ -127,7 +127,7 @@ export const DepartmentComplaintDetails = () => {
                 {complaint.priority} Priority
               </span>
               <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
-                ΓùÅ {complaint.status}
+                ● {complaint.status}
               </span>
             </div>
 
@@ -195,7 +195,7 @@ export const DepartmentComplaintDetails = () => {
       </div>
 
       {/* =========================================================================
-          SECTION 2 ΓÇö ASSIGNED WORKERS
+          SECTION 2 — ASSIGNED WORKERS
          ========================================================================= */}
       <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-5">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -204,7 +204,7 @@ export const DepartmentComplaintDetails = () => {
               Field Execution
             </span>
             <h2 className="text-base font-bold text-slate-900 font-display mt-1">
-              SECTION 2 ΓÇö Assigned Workers
+              SECTION 2 — Assigned Workers
             </h2>
             <p className="text-xs text-slate-400">
               Department ground crew allocated to inspect and resolve this complaint.
@@ -252,7 +252,7 @@ export const DepartmentComplaintDetails = () => {
                     <span className="text-[11px] font-medium">{worker.phone}</span>
                   </div>
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
-                    ΓùÅ Working
+                    ● Working
                   </span>
                 </div>
               </div>
@@ -270,7 +270,7 @@ export const DepartmentComplaintDetails = () => {
       </div>
 
       {/* =========================================================================
-          SECTION 3 ΓÇö WORK STATUS & TIMELINE
+          SECTION 3 — WORK STATUS & TIMELINE
          ========================================================================= */}
       <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-6">
         <div className="border-b border-slate-100 pb-4">
@@ -278,7 +278,7 @@ export const DepartmentComplaintDetails = () => {
             Progress Tracking
           </span>
           <h2 className="text-base font-bold text-slate-900 font-display mt-1">
-            SECTION 3 ΓÇö Work Status & Execution Updates
+            SECTION 3 — Work Status & Execution Updates
           </h2>
           <p className="text-xs text-slate-400">
             Current stage in the resolution lifecycle and log of ground worker updates.

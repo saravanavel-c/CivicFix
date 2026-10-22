@@ -207,7 +207,7 @@ export const DepartmentDashboard = () => {
                         {c.priority} Priority
                       </span>
                       <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${getStatusBadgeClass(c.status)}`}>
-                        ΓùÅ {c.status}
+                        ● {c.status}
                       </span>
                     </div>
                   </div>

@@ -157,7 +157,7 @@ export const NearbyIssues = () => {
               {position ? (
                 <div className="text-[10px] font-normal text-slate-400 mt-0.5">{`You: ${position.lat.slice(0,8)}, ${position.lng.slice(0,8)}`}</div>
               ) : (
-                <div className="text-[10px] font-normal text-slate-400 mt-0.5">LocatingΓÇª</div>
+                <div className="text-[10px] font-normal text-slate-400 mt-0.5">Locating…</div>
               )}
             </div>
             {watching && (

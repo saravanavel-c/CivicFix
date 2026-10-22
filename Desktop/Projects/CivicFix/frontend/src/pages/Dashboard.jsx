@@ -45,7 +45,7 @@ export const Dashboard = () => {
         
         <div className="space-y-1.5">
           <h1 className="text-2xl md:text-3xl font-bold font-display text-slate-800 tracking-tight">
-            Good morning, Saravana ≡ƒæï
+            Good morning, Saravana 👋
           </h1>
           <p className="text-sm text-slate-500 max-w-md">
             Help make your community better by reporting local infrastructure and sanitation issues.

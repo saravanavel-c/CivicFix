@@ -285,7 +285,7 @@ export const Profile = () => {
                   label="Current Password"
                   name="currentPassword"
                   type="password"
-                  placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"
+                  placeholder="••••••••"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required
@@ -296,7 +296,7 @@ export const Profile = () => {
                     label="New Password"
                     name="newPassword"
                     type="password"
-                    placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"
+                    placeholder="••••••••"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
@@ -305,7 +305,7 @@ export const Profile = () => {
                     label="Confirm New Password"
                     name="confirmPassword"
                     type="password"
-                    placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"
+                    placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required

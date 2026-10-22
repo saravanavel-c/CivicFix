@@ -122,7 +122,7 @@ export const MapPicker = ({ lat, lng, zoom = 16, onChange }) => {
           className="cf-zoom-btn"
           onClick={(e) => { e.preventDefault(); map && map.zoomOut(); }}
           aria-label="Zoom out"
-        >ΓêÆ</button>
+        >−</button>
       </div>
 
       {/* Mini-map overview */}

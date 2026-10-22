@@ -285,7 +285,7 @@ export const ReportIssue = () => {
             </button>
             <div>
               <h1 className="text-xl font-bold text-slate-800 font-display">Report an Issue</h1>
-              <p className="text-xs text-slate-400">Step {step} of 5 ΓÇö {
+              <p className="text-xs text-slate-400">Step {step} of 5 — {
                 step === 1 ? 'Capture Photo' :
                 step === 2 ? 'Set Location' :
                 step === 3 ? 'Describe Issue' :
@@ -709,7 +709,7 @@ export const ReportIssue = () => {
                       <ul className="text-[10px] text-amber-600 space-y-0.5">
                         {analysis.duplicates.map((dup) => (
                           <li key={dup.id}>
-                            {dup.id} ΓÇö {Math.round(dup.similarity * 100)}% similar
+                            {dup.id} — {Math.round(dup.similarity * 100)}% similar
                             {dup.distanceMeters !== null ? `, ${dup.distanceMeters}m away` : ''}
                           </li>
                         ))}
@@ -727,7 +727,7 @@ export const ReportIssue = () => {
                       className="accent-amber-600 cursor-pointer"
                     />
                     <span className="text-[10px] font-medium text-amber-700">
-                      This is a separate issue ΓÇö submit anyway
+                      This is a separate issue — submit anyway
                     </span>
                   </label>
                 </div>

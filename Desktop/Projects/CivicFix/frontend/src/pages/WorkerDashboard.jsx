@@ -191,7 +191,7 @@ export const WorkerDashboard = () => {
               <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/40">
                 <span className="text-slate-400">Current Work Status:</span>
                 <span className="font-bold text-primary-600 bg-primary-50 px-2.5 py-0.5 rounded-full border border-primary-100">
-                  ΓùÅ {selectedComplaint.status}
+                  ● {selectedComplaint.status}
                 </span>
               </div>
             </div>
